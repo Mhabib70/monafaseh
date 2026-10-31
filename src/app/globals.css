@@ -1,0 +1,729 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* NoorCraft local font definitions — loaded inline because @import needs relative paths */
+@font-face {
+  font-family: 'Lalezar';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lalezar.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-400.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-700.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-800.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Amiri Quran';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/amiri-quran.ttf') format('truetype');
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-vazirmatn);
+  --font-display: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif;
+  --font-rounded: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif;
+  --font-quran: "Amiri Quran", "Baloo Bhaijaan 2", serif;
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* NoorCraft brand colors */
+  --color-noor-sky: #87CEEB;
+  --color-noor-yellow: #FFD700;
+  --color-noor-coral: #FF7F7F;
+  --color-noor-green: #7CFC00;
+  --color-noor-white: #FFFFFF;
+  --color-noor-navy: #191970;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.875rem;
+  color-scheme: light;
+  /* تم روشن «کاغذ مصحف» — کرم گرم با طلایی سوخته */
+  --background: #fdf9ef;
+  --foreground: #2a2110;
+  --card: #fffdf7;
+  --card-foreground: #2a2110;
+  --popover: #fffdf7;
+  --popover-foreground: #2a2110;
+  --primary: #FFD700;
+  --primary-foreground: #4a3400;
+  --secondary: #f3ead6;
+  --secondary-foreground: #5a4300;
+  --muted: #f3ead6;
+  --muted-foreground: #7a6a45;
+  --accent: #87CEEB;
+  --accent-foreground: #123243;
+  --destructive: #e05555;
+  --border: #d9c39a;
+  --input: #d9c39a;
+  --ring: #d9a900;
+  --chart-1: #87CEEB;
+  --chart-2: #FFD700;
+  --chart-3: #FF7F7F;
+  --chart-4: #7CFC00;
+  --chart-5: #5a4300;
+  --sidebar: #fffdf7;
+  --sidebar-foreground: #2a2110;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #4a3400;
+  --sidebar-accent: #f3ead6;
+  --sidebar-accent-foreground: #5a4300;
+  --sidebar-border: #e5d9bd;
+  --sidebar-ring: #d9a900;
+}
+
+.dark {
+  /* تم تیره «شب محض» — خنثی و تخت، بدون هیچ هاله/درخشش طلایی */
+  color-scheme: dark;
+  --background: #08080a;
+  --foreground: #f4f4f6;
+  --card: #101013;
+  --card-foreground: #f4f4f6;
+  --popover: #101013;
+  --popover-foreground: #f4f4f6;
+  --primary: #e8c766;
+  --primary-foreground: #17130a;
+  --secondary: #17171b;
+  --secondary-foreground: #f4f4f6;
+  --muted: #17171b;
+  --muted-foreground: #9a9aa5;
+  --accent: #1e1e24;
+  --accent-foreground: #f4f4f6;
+  --destructive: #e56969;
+  --border: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.16);
+  --ring: #8f8f9c;
+  --chart-1: #e8c766;
+  --chart-2: #9a9aa5;
+  --chart-3: #e56969;
+  --chart-4: #7fd17f;
+  --chart-5: #f4f4f6;
+  --sidebar: #101013;
+  --sidebar-foreground: #f4f4f6;
+  --sidebar-primary: #e8c766;
+  --sidebar-primary-foreground: #17130a;
+  --sidebar-accent: #17171b;
+  --sidebar-accent-foreground: #f4f4f6;
+  --sidebar-border: rgba(255, 255, 255, 0.10);
+  --sidebar-ring: #8f8f9c;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    direction: rtl;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-vazirmatn), system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv01";
+    letter-spacing: -0.005em;
+  }
+
+  /* Headings automatically use the display font (Lalezar) for that chunky, friendly game look.
+     Use !important to override Tailwind's font-extrabold which sets font-family on body. */
+  h1, h2, h3 {
+    font-family: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif !important;
+    font-weight: 400 !important;
+    letter-spacing: 0;
+    line-height: 1.15;
+  }
+  h4, h5, h6 {
+    font-family: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif !important;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* NoorCraft custom utilities */
+@layer utilities {
+  .font-display {
+    font-family: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif !important;
+    font-weight: 400 !important;
+    letter-spacing: 0;
+  }
+  .font-rounded {
+    font-family: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif !important;
+  }
+  .font-quran {
+    font-family: "Amiri Quran", "Baloo Bhaijaan 2", serif !important;
+    line-height: 2.2;
+  }
+  .font-body {
+    font-family: var(--font-vazirmatn), system-ui, sans-serif !important;
+  }
+  /* Numeric display — large, chunky numbers for stats */
+  .tabular-display {
+    font-family: var(--font-geist-mono), "Vazirmatn", monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .bg-noor-gradient {
+    background: linear-gradient(135deg, #87CEEB 0%, #e7f4fc 50%, #ffffff 100%);
+  }
+  .dark .bg-noor-gradient {
+    background: linear-gradient(135deg, #0c0b09 0%, #17150f 50%, #221f18 100%);
+  }
+
+  /* === Colorful graphic cards for headings & texts (light-mode-friendly) === */
+  .noor-card-sky {
+    background: linear-gradient(135deg, rgba(135, 206, 235, 0.18), rgba(135, 206, 235, 0.06));
+    border: 2px solid rgba(135, 206, 235, 0.45);
+    box-shadow: 0 6px 0 0 rgba(74, 155, 191, 0.18), 0 14px 28px -10px rgba(135, 206, 235, 0.35);
+  }
+  .dark .noor-card-sky {
+    background: linear-gradient(135deg, rgba(135, 206, 235, 0.15), rgba(135, 206, 235, 0.04));
+    border-color: rgba(135, 206, 235, 0.3);
+  }
+
+  .noor-card-yellow {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 215, 0, 0.06));
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    box-shadow: 0 6px 0 0 rgba(201, 168, 0, 0.2), 0 14px 28px -10px rgba(255, 215, 0, 0.4);
+  }
+  .dark .noor-card-yellow {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.04));
+    border-color: rgba(255, 215, 0, 0.3);
+  }
+
+  .noor-card-coral {
+    background: linear-gradient(135deg, rgba(255, 127, 127, 0.2), rgba(255, 127, 127, 0.06));
+    border: 2px solid rgba(255, 127, 127, 0.5);
+    box-shadow: 0 6px 0 0 rgba(196, 77, 77, 0.2), 0 14px 28px -10px rgba(255, 127, 127, 0.4);
+  }
+  .dark .noor-card-coral {
+    background: linear-gradient(135deg, rgba(255, 127, 127, 0.15), rgba(255, 127, 127, 0.04));
+    border-color: rgba(255, 127, 127, 0.3);
+  }
+
+  .noor-card-green {
+    background: linear-gradient(135deg, rgba(124, 252, 0, 0.18), rgba(124, 252, 0, 0.05));
+    border: 2px solid rgba(124, 252, 0, 0.5);
+    box-shadow: 0 6px 0 0 rgba(92, 184, 0, 0.2), 0 14px 28px -10px rgba(124, 252, 0, 0.35);
+  }
+  .dark .noor-card-green {
+    background: linear-gradient(135deg, rgba(124, 252, 0, 0.12), rgba(124, 252, 0, 0.03));
+    border-color: rgba(124, 252, 0, 0.3);
+  }
+
+  .noor-card-rainbow {
+    background:
+      linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 127, 127, 0.14) 40%, rgba(124, 252, 0, 0.14) 75%, rgba(135, 206, 235, 0.16));
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 6px 0 0 rgba(25, 25, 112, 0.12), 0 16px 30px -12px rgba(25, 25, 112, 0.3);
+  }
+  .dark .noor-card-rainbow {
+    background:
+      linear-gradient(135deg, rgba(255, 215, 0, 0.13), rgba(255, 127, 127, 0.1) 40%, rgba(124, 252, 0, 0.1) 75%, rgba(135, 206, 235, 0.12));
+    border-color: rgba(255, 215, 0, 0.25);
+  }
+
+  /* Gradient pill — for short text highlights / numbers */
+  .noor-pill-sky {
+    background: linear-gradient(135deg, rgba(135, 206, 235, 0.2), rgba(135, 206, 235, 0.08));
+    border: 1.5px solid rgba(135, 206, 235, 0.5);
+  }
+  .noor-pill-yellow {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.08));
+    border: 1.5px solid rgba(255, 215, 0, 0.55);
+  }
+  .noor-pill-coral {
+    background: linear-gradient(135deg, rgba(255, 127, 127, 0.22), rgba(255, 127, 127, 0.07));
+    border: 1.5px solid rgba(255, 127, 127, 0.5);
+  }
+  .noor-pill-green {
+    background: linear-gradient(135deg, rgba(124, 252, 0, 0.2), rgba(124, 252, 0, 0.06));
+    border: 1.5px solid rgba(124, 252, 0, 0.5);
+  }
+
+  .bg-noor-hero {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.16), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(135, 206, 235, 0.14), transparent 50%),
+      radial-gradient(circle at 50% 85%, rgba(124, 200, 60, 0.08), transparent 50%),
+      linear-gradient(135deg, #fdf9ef 0%, #f4ecda 100%);
+  }
+  .dark .bg-noor-hero {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.1), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.07), transparent 50%),
+      radial-gradient(circle at 50% 85%, rgba(217, 179, 106, 0.06), transparent 50%),
+      linear-gradient(135deg, #0c0b09 0%, #14120d 100%);
+  }
+
+  .text-shadow-soft {
+    text-shadow: 0 2px 8px rgba(25, 25, 112, 0.18);
+  }
+
+  .shadow-chunky {
+    box-shadow: 0 6px 0 0 var(--color-noor-navy), 0 10px 20px -6px rgba(25, 25, 112, 0.35);
+  }
+  .shadow-chunky-yellow {
+    box-shadow: 0 6px 0 0 #c9a800, 0 10px 20px -6px rgba(255, 215, 0, 0.45);
+  }
+  .shadow-chunky-coral {
+    box-shadow: 0 6px 0 0 #c44d4d, 0 10px 20px -6px rgba(255, 127, 127, 0.45);
+  }
+  .shadow-chunky-green {
+    box-shadow: 0 6px 0 0 #5cb800, 0 10px 20px -6px rgba(124, 252, 0, 0.45);
+  }
+  .shadow-chunky-sky {
+    box-shadow: 0 6px 0 0 #4a9bbf, 0 10px 20px -6px rgba(135, 206, 235, 0.45);
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(14px);
+    background: rgba(255, 253, 247, 0.78);
+    border: 1px solid rgba(180, 140, 40, 0.18);
+  }
+  .dark .glass-panel {
+    background: rgba(23, 21, 15, 0.78);
+    border: 1px solid rgba(255, 215, 0, 0.12);
+  }
+
+  .animate-float {
+    animation: floaty 6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: floaty 9s ease-in-out infinite;
+  }
+  .animate-pulse-glow {
+    animation: pulseGlow 2.4s ease-in-out infinite;
+  }
+  .animate-spin-slow {
+    animation: spin 18s linear infinite;
+  }
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .animate-bob {
+    animation: bob 2.6s ease-in-out infinite;
+  }
+
+  /* ============================================================
+     «نور و شب» — المان‌های سه‌بعدی (نسخه ۲ رابط کاربری)
+     ============================================================ */
+
+  /* آیکون خمیری سه‌بعدی (claymorphism) — روی هر رنگی می‌نشیند */
+  .clay-3d {
+    position: relative;
+    box-shadow:
+      inset 0 3px 5px rgba(255, 255, 255, 0.55),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.22),
+      0 8px 16px rgba(0, 0, 0, 0.28);
+  }
+  .clay-3d::after {
+    content: "";
+    position: absolute;
+    top: 14%;
+    right: 18%;
+    width: 30%;
+    height: 18%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    filter: blur(1.5px);
+    transform: rotate(-18deg);
+    pointer-events: none;
+  }
+  .light .clay-3d,
+  :root:not(.dark) .clay-3d {
+    box-shadow:
+      inset 0 3px 5px rgba(255, 255, 255, 0.8),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.14),
+      0 7px 14px rgba(120, 90, 20, 0.25);
+  }
+
+  /* دکمه سه‌بعدی طلایی — برجسته و فشارپذیر */
+  .btn-3d-gold {
+    background: linear-gradient(140deg, #FFE58A, #FFC400 55%, #e09e00);
+    box-shadow:
+      0 10px 22px rgba(255, 196, 0, 0.4),
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -3px 5px rgba(160, 110, 0, 0.35);
+  }
+  .btn-3d-gold:active {
+    transform: translateY(2px);
+    box-shadow:
+      0 5px 12px rgba(255, 196, 0, 0.4),
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -2px 3px rgba(160, 110, 0, 0.35);
+  }
+
+  /* برچسب سه‌بعدی (قیمت جلسه استاد و...) */
+  .tag-3d {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-weight: 800;
+    background: linear-gradient(140deg, #FFE58A, #FFC400);
+    color: #231a00;
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.6),
+      inset 0 -2px 3px rgba(150, 100, 0, 0.35),
+      0 4px 9px rgba(255, 196, 0, 0.35);
+  }
+
+  /* کتاب سه‌بعدی شناور */
+  .book3d {
+    width: 76px;
+    height: 58px;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(12deg) rotateY(-24deg) rotateZ(3deg);
+    animation: bookFloaty 5s ease-in-out infinite;
+  }
+  .book3d .cover {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px 10px 10px 6px;
+    background: linear-gradient(135deg, #1e8f5e, #0f6b43);
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.35),
+      inset 0 -3px 5px rgba(0, 0, 0, 0.35),
+      0 14px 26px rgba(25, 25, 112, 0.35);
+    display: grid;
+    place-items: center;
+    color: #FFD700;
+    font-size: 22px;
+  }
+  .book3d .pages {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    right: -9px;
+    width: 12px;
+    background: repeating-linear-gradient(180deg, #fdf6e3 0 2px, #e8dcc0 2px 3px);
+    border-radius: 0 3px 3px 0;
+    transform: rotateY(38deg);
+    transform-origin: left center;
+    box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.2);
+  }
+  .book3d .back {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px 10px 10px 6px;
+    background: #0b5236;
+    transform: translateZ(-10px);
+    box-shadow: 0 16px 30px rgba(25, 25, 112, 0.4);
+  }
+  @keyframes bookFloaty {
+    0%, 100% { transform: rotateX(12deg) rotateY(-24deg) translateZ(0); }
+    50% { transform: rotateX(14deg) rotateY(-18deg) translateZ(10px); }
+  }
+
+  /* نقش‌مایه هندسی محو پس‌زمینه (گره‌چینی) */
+  .noor-pattern {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a800' stroke-width='1'%3E%3Cpath d='M22 0 L44 22 L22 44 L0 22 Z'/%3E%3Ccircle cx='22' cy='22' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  }
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(2deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.45); }
+  50% { box-shadow: 0 0 0 16px rgba(255, 215, 0, 0); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ============================================================
+   Online Users Marquee — vertical infinite scroll
+   The track contains two stacked copies of the same list.
+   We translate from 0% to -50% so that when copy #1 has fully
+   scrolled out of view, copy #2 is exactly in its place — creating
+   a seamless infinite loop. Duration is set inline per-instance
+   (15s for medium speed) so different pages can pick different speeds.
+   ============================================================ */
+@keyframes noor-marquee-up {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.noor-marquee-track {
+  animation: noor-marquee-up var(--marquee-duration, 15s) linear infinite;
+  will-change: transform;
+}
+
+/* Pause on hover (desktop only — touch devices keep animating).
+   The :hover pseudo-class does not fire on tap, so mobile users
+   continue to see motion, as requested. */
+.noor-marquee-container:hover .noor-marquee-track,
+.noor-marquee-container:focus-within .noor-marquee-track {
+  animation-play-state: paused;
+}
+
+/* When the user has reduced-motion preference, disable the marquee
+   entirely and let them scroll normally. */
+@media (prefers-reduced-motion: reduce) {
+  .noor-marquee-track {
+    animation: none;
+  }
+}
+
+/* تم روشن «کاغذ مصحف» — جداکننده کاغذی برای همه سطوح کارت.
+   کارت‌های رنگی (noor-card-*) حاشیه و سایه اختصاصی خودشان را دارند
+   و مستثنی هستند. تم تیره کاملاً دست‌نخورده می‌ماند. */
+:root:not(.dark) .bg-card:not([class*="noor-card-"]) {
+  border: 1px solid #d9c39a;
+  box-shadow:
+    0 10px 22px -14px rgba(140, 105, 30, 0.3),
+    inset 0 1px 0 #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(135, 206, 235, 0.5);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(135, 206, 235, 0.8);
+}
+
+/* === Mobile WebRTC fixes === */
+/* iOS Safari: ensure video elements don't get native controls overlay */
+video::-webkit-media-controls {
+  display: none !important;
+}
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+/* Prevent tap highlight on touch controls (buttons) */
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* iOS safe-area insets for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Prevent overscroll/bounce on mobile when in session view */
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================
+   حالت تیره — «شب محض»
+   در این حالت تمام هاله/درخشش‌های طلایی و رنگی خنثی می‌شوند؛
+   حالت روشن «کاغذ مصحف» دقیقاً دست‌نخورده باقی می‌ماند.
+   ============================================================ */
+@layer utilities {
+  .dark .bg-noor-gradient {
+    background: linear-gradient(135deg, #0a0a0d 0%, #101014 50%, #141418 100%);
+  }
+
+  .dark .noor-card-sky {
+    background: rgba(135, 206, 235, 0.045);
+    border: 1px solid rgba(135, 206, 235, 0.16);
+    box-shadow: none;
+  }
+  .dark .noor-card-yellow {
+    background: rgba(232, 199, 102, 0.05);
+    border: 1px solid rgba(232, 199, 102, 0.18);
+    box-shadow: none;
+  }
+  .dark .noor-card-coral {
+    background: rgba(229, 105, 105, 0.05);
+    border: 1px solid rgba(229, 105, 105, 0.16);
+    box-shadow: none;
+  }
+  .dark .noor-card-green {
+    background: rgba(127, 209, 127, 0.045);
+    border: 1px solid rgba(127, 209, 127, 0.15);
+    box-shadow: none;
+  }
+  .dark .noor-card-rainbow {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+  }
+
+  .dark .noor-pill-sky {
+    background: rgba(135, 206, 235, 0.07);
+    border: 1px solid rgba(135, 206, 235, 0.20);
+  }
+  .dark .noor-pill-yellow {
+    background: rgba(232, 199, 102, 0.07);
+    border: 1px solid rgba(232, 199, 102, 0.22);
+  }
+  .dark .noor-pill-coral {
+    background: rgba(229, 105, 105, 0.07);
+    border: 1px solid rgba(229, 105, 105, 0.20);
+  }
+  .dark .noor-pill-green {
+    background: rgba(127, 209, 127, 0.07);
+    border: 1px solid rgba(127, 209, 127, 0.20);
+  }
+
+  .dark .bg-noor-hero {
+    background: linear-gradient(180deg, #08080a 0%, #0b0b0e 55%, #08080a 100%);
+  }
+
+  .dark .shadow-chunky {
+    box-shadow: 0 4px 0 0 #000000;
+  }
+  .dark .shadow-chunky-yellow {
+    box-shadow: 0 4px 0 0 #8a6f16;
+  }
+  .dark .shadow-chunky-coral {
+    box-shadow: 0 4px 0 0 #7d3a3a;
+  }
+  .dark .shadow-chunky-green {
+    box-shadow: 0 4px 0 0 #3f6b3f;
+  }
+  .dark .shadow-chunky-sky {
+    box-shadow: 0 4px 0 0 #3b6779;
+  }
+
+  .dark .glass-panel {
+    background: rgba(8, 8, 10, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .btn-3d-gold {
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -3px 5px rgba(160, 110, 0, 0.35);
+  }
+  .dark .btn-3d-gold:active {
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -2px 3px rgba(160, 110, 0, 0.35);
+  }
+
+  .dark .tag-3d {
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.6),
+      inset 0 -2px 3px rgba(150, 100, 0, 0.35);
+  }
+
+  .dark .noor-pattern {
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M22 0 L44 22 L22 44 L0 22 Z'/%3E%3Ccircle cx='22' cy='22' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .dark .clay-3d {
+    box-shadow:
+      inset 0 3px 5px rgba(255, 255, 255, 0.30),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.28),
+      0 6px 12px rgba(0, 0, 0, 0.35);
+  }
+  .dark .clay-3d::after {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  .dark .book3d .cover {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.35),
+      inset 0 -3px 5px rgba(0, 0, 0, 0.35),
+      0 14px 26px rgba(0, 0, 0, 0.45);
+  }
+  .dark .book3d .back {
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  /* در حالت تیره هیچ پالس/هاله‌ای اجرا نمی‌شود */
+  .dark .animate-pulse-glow {
+    animation: none;
+  }
+}

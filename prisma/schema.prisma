@@ -1,0 +1,634 @@
+// Prisma schema for منافسه (Monafaseh) — Production
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// احراز هویت (NextAuth)
+// ============================================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// کاربر (User) — پروفایل کامل
+// ============================================================
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String?
+  fullName          String
+  role              String   @default("user") // admin | user
+  age               Int?
+  gender            String?  // male | female
+  province          String?
+  city              String?
+  phone             String?
+  telegramId        String?
+  avatarUrl         String?
+  avatarColor       String   @default("#87CEEB")
+  bio               String?
+  referredBy        String?
+  education         String?
+  honors            String?  // مدارج و افتخارات متنی (نمایش در پروفایل عمومی)
+  socialLinks       String?  // JSON: { eitaa, telegram, instagram, youtube, website }
+  gallery           String?  // JSON آرایه تصاویر پروفایل: [{ url, thumb }] — حداکثر ۱۰
+
+  // ── اتصال به برنامک ایتا ──
+  eitaaId           String?  @unique
+  eitaaUsername     String?
+
+  // اطلاعات تلاوت
+  recitationType    String?  // تحقیق | ترتیل
+  reciterNationality String? // iranian | foreign
+  favoriteReciter   String?
+  recitationSkills  String?  // JSON array
+  interests         String?  // JSON array
+
+  // آمار
+  noorPoints        Int      @default(0)
+  sessionsAttended  Int      @default(0)
+  profileCompletion Int      @default(0)
+  streak            Int      @default(1)
+  lastVisit         DateTime @default(now())
+
+  // ── تیک آبی (احراز قاری/استاد) ──
+  verificationStatus String?  @default("none") // none | pending | approved | rejected
+  qariRank           String?  // provincial | national | international (تیک رنگی قاری)
+  verifiedAt         DateTime?
+  verificationNote   String?
+
+  // ── اطلاعات بانکی (برای درآمدزایی قاریان) ──
+  iban               String?  // IR + 24 رقم
+  cardNumber         String?  // 16 رقم
+  accountNumber      String?
+  accountHolder      String?
+  bankName           String?
+  isOfferingPrivateSessions Boolean @default(false)
+  privateSessionPrice       Int     @default(1) // قیمت هر جلسه خصوصی به امتیاز — توسط استاد تعیین می‌شود (۱ تا ۵۰)
+
+  // ── سیستم امتیاز (Credits) ──
+  creditBalance      Int      @default(0)
+
+  // Relations
+  accounts          Account[]
+  sessions          Session[]
+  hostedSessions    RecitationSession[]
+  sessionParticipations SessionParticipant[]
+  loungeMemberships LoungeMember[]
+  loungeMessages    LoungeMessage[]
+  competitions      CompetitionParticipant[]
+  tahmeeds          Tahmeed[]
+  badges            UserBadge[]
+  blogComments      BlogComment[]
+  verificationRequests VerificationRequest[]
+  creditTransactions CreditTransaction[]
+  payments          Payment[]
+  masterBookings    MasterBooking[] @relation("MasterBookings")
+  studentBookings   MasterBooking[] @relation("StudentBookings")
+  settlements       Settlement[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([email])
+  @@index([province])
+  @@index([recitationType])
+  @@index([verificationStatus])
+}
+
+// ============================================================
+// نشان‌ها (Badges)
+// ============================================================
+model Badge {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String
+  color       String
+  users       UserBadge[]
+
+  createdAt   DateTime @default(now())
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+// ============================================================
+// محفل تلاوت (Recitation Session)
+// ============================================================
+model RecitationSession {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String?
+  hostId             String
+  recitationType     String   // تحقیق | ترتیل
+  reciterNationality String   // iranian | foreign
+  favoriteReciter    String
+  surah              String
+  capacity           Int      @default(10)
+  status             String   @default("open") // live | open | private
+  genderRestriction  String   @default("all") // male | female | all
+  passwordProtected  Boolean  @default(false)
+  password           String?
+  jitsiRoom          String?
+  startedAt          DateTime @default(now())
+  endedAt            DateTime?
+
+  // ── WebRTC signaling (جایگزین PeerJS — مستقیم روی دیتابیس) ──
+  // هر سه فیلد JSON هستند و برای پشتیبانی از چند مهمان، به‌صورت
+  // map با کلید connId ذخیره می‌شوند:
+  //   signalOffer:        { [connId]: RTCSessionDescription }
+  //   signalAnswer:       { [connId]: RTCSessionDescription }
+  //   signalIceCandidates:{ [connId]: ICECandidate[] }  (میزبان)
+  //   guestIceCandidates: { [connId]: ICECandidate[] }  (مهمان)
+  signalOffer        String?
+  signalAnswer       String?
+  signalIceCandidates String?
+  guestIceCandidates String?
+  signalUpdatedAt    DateTime?
+
+  host               User     @relation(fields: [hostId], references: [id])
+  participants       SessionParticipant[]
+  competitions       Competition[]
+  masterBookings     MasterBooking[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([hostId])
+  @@index([status])
+  @@index([recitationType])
+}
+
+model SessionParticipant {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  session   RecitationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+}
+
+// ============================================================
+// رقابت تلاوت (Competition)
+// ============================================================
+model Competition {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  currentMaqam       String
+  currentSurah       String
+  currentVerse       Int      @default(1)
+  selectedEndVerse   Int?
+  currentRound       Int      @default(1)
+  currentIndex       Int      @default(0)
+  status             String   @default("setup") // setup | active | paused | ended
+  startedAt          DateTime?
+  endedAt            DateTime?
+
+  session            RecitationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participants       CompetitionParticipant[]
+  entries            RecitationEntry[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model CompetitionParticipant {
+  id              String   @id @default(cuid())
+  competitionId   String
+  userId          String
+  order           Int
+  name            String
+  avatarColor     String
+  avatarUrl       String?
+
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, userId])
+}
+
+model RecitationEntry {
+  id              String   @id @default(cuid())
+  competitionId   String
+  participantId   String
+  participantName String
+  avatarColor     String
+  surah           String
+  startVerse      Int
+  endVerse        Int
+  maqam           String
+  round           Int
+  orderInRound    Int
+  durationSec     Int
+  passed          Boolean  @default(false)
+  rating          Float?
+  ratings         String?  // JSON object
+  tahmeedCount    Int      @default(0)
+
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  tahmeeds        Tahmeed[]
+
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+
+  @@index([competitionId])
+  @@index([round])
+}
+
+// ============================================================
+// تشویق‌ها (Tahmeed)
+// ============================================================
+model Tahmeed {
+  id            String   @id @default(cuid())
+  entryId       String?
+  userId        String
+  phraseId      String
+  phraseText    String
+  senderName    String
+  senderAvatarColor String
+
+  entry         RecitationEntry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@index([entryId])
+  @@index([userId])
+}
+
+// ============================================================
+// تالار گفتگو (Lounge)
+// ============================================================
+model Lounge {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  category        String   // reciter-fans | maqam-lovers | city-group | skill-group | age-group | general
+  icon            String   @default("message-circle")
+  color           String   @default("#FFD700")
+  tags            String?  // JSON array
+  isPrivate       Boolean  @default(false)
+  genderRestriction String @default("all") // male | female | all
+  relatedReciter  String?
+  relatedMaqam    String?
+  relatedCity     String?
+  creatorId       String?
+  isActive        Boolean  @default(true) // تالارهای غیرفعال از لیست خارج می‌شوند
+  pinnedMessageId String?  // پیام سنجاق‌شده تالار (سبک تلگرام)
+
+  members         LoungeMember[]
+  messages        LoungeMessage[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([relatedReciter])
+  @@index([isActive])
+}
+
+model LoungeMember {
+  id          String   @id @default(cuid())
+  loungeId    String
+  userId      String
+  role        String   @default("member") // admin | moderator | member
+  joinedAt    DateTime @default(now())
+  isOnline    Boolean  @default(false)
+  lastActiveAt DateTime @default(now())
+
+  lounge      Lounge   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([loungeId, userId])
+  @@index([loungeId])
+  @@index([userId])
+}
+
+model LoungeMessage {
+  id              String   @id @default(cuid())
+  loungeId        String
+  userId          String
+  text            String
+  type            String   @default("text") // text | voice | image | invite | system
+  voiceDuration   Int?
+  imageUrl        String?
+  inviteSessionId String?
+  inviteSessionTitle String?
+  replyToId       String?
+
+  lounge          Lounge   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+  @@index([loungeId])
+  @@index([userId])
+}
+
+// ============================================================
+// آمار سایت (Site Stats)
+// ============================================================
+model SiteStats {
+  id              String   @id @default(cuid())
+  totalUsers      Int      @default(0)
+  activeSessions  Int      @default(0)
+  totalRecitations Int     @default(0)
+  totalTahmeeds   Int      @default(0)
+  onlineUsers     Int      @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================================
+// بلاگ سازنده (Blog) — ایده‌ها، اندیشه‌ها، سرگذشت‌ها
+// ============================================================
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  excerpt     String   // خلاصه کوتاه برای کارت
+  content     String   // متن کامل (markdown)
+  imageUrl    String?  // تصویر شاخص
+  category    String   @default("general") // general | idea | story | innovation
+  tags        String?  // JSON array
+  isPublished Boolean  @default(true)
+  views       Int      @default(0)
+  likes       Int      @default(0)
+  dislikes    Int      @default(0)
+
+  comments    BlogComment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([category])
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  userName  String
+  avatarColor String
+  avatarUrl String?
+  text      String
+  likes     Int      @default(0)
+
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
+}
+
+// ============================================================
+// تبلیغات (Ads) — بنرهای تبلیغاتی قابل مدیریت از پنل ادمین
+// ============================================================
+model Ad {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  cta         String   // متن دکمه
+  url         String   // لینک مقصد
+  imageUrl    String?  // تصویر بنر (اختیاری)
+  theme       String   @default("yellow") // yellow | coral | sky | green | rainbow | navy
+  badge       String?  // متن بَج (تخفیف/جدید/رایگان)
+  size        String   @default("leaderboard") // leaderboard | rectangle | halfpage | billboard | inline
+  slot        String?  // جایگاه خاص (اختیاری — اگر خالی، در همه‌ی جایگاه‌ها قابل نمایش)
+  active      Boolean  @default(true)
+  priority    Int      @default(5) // 1-10
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  startAt     DateTime? // شروع نمایش (اختیاری — زمان‌بندی)
+  endAt       DateTime? // پایان نمایش (اختیاری)
+
+  dailyStats  AdDailyStat[]
+  slotAssignments AdSlot[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+  @@index([slot])
+  @@index([priority])
+}
+
+// ============================================================
+// جایگاه‌های تبلیغاتی (Ad Slots) — مدیریت مستقل هر جایگاه
+// ============================================================
+// هر جایگاه یک شناسه یکتا دارد (مثل "landing-top") و می‌تواند
+// فعال/غیرفعال شود. همچنین می‌توان یک تبلیغ خاص را به آن اختصاص داد.
+model AdSlot {
+  id            String   @id // e.g., "landing-top"
+  page          String   // e.g., "landing" | "sessions" | "challenge" | "create-session" | "blog" | "dashboard"
+  pageLabel     String   // e.g., "صفحه اصلی"
+  position      String   // e.g., "بالای صفحه"
+  size          String   // e.g., "leaderboard"
+  width         Int      // e.g., 728
+  height        Int      // e.g., 90
+  enabled       Boolean  @default(true)
+  assignedAdId  String?  // اگر null، انتخاب خودکار از بین تبلیغات فعال
+  ad            Ad?      @relation(fields: [assignedAdId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================
+// آمار روزانه‌ی تبلیغات — برای نمودارهای روند و auto-optimization
+// ============================================================
+model AdDailyStat {
+  id          String   @id @default(cuid())
+  adId        String
+  date        DateTime // تاریخ (روز — ساعت ۰۰:۰۰)
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+
+  ad          Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([adId, date])
+  @@index([adId])
+  @@index([date])
+}
+
+// ============================================================
+// تیک آبی — درخواست‌های احراز قاری/استاد/عالم
+// ============================================================
+model VerificationRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  requestType     String    // bronze | silver | gold (تصمیم داور)
+  auditionUrl     String?   // تلاوت آزمونی (فایل ضبط/آپلودشده یا لینک)
+  skills          String?   // JSON آرایه مهارت‌های اعلامی
+  pledge          Boolean   @default(false) // پذیرش تعهد اخلاقی
+  competitionId   String?   // شناسه مسابقه از فهرست معتبر (trusted-competitions)
+  competitionYear String?   // سال کسب مقام
+  fullName        String
+  bio             String
+  recitationVideoUrl String?
+  socialLinks     String?
+  achievements    String?
+  status          String    @default("pending") // pending | approved | rejected
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  adminNote       String?
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// سیستم امتیاز — تراکنش‌ها (خرید/مصرف/بازگشت/هدیه/درآمد)
+// ============================================================
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // purchase | spend | refund | bonus | earning
+  amount      Int      // امتیاز (برای earning: تومان)
+  balanceAfter Int     // موجودی امتیاز بعد از تراکنش
+  description String
+  paymentId   String?  @unique
+  bookingId   String?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+}
+
+// ============================================================
+// پرداخت‌های درگاه سپ بانک سامان
+// ============================================================
+model Payment {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Int      // مبلغ (تومان)
+  credits      Int      // امتیاز خریداری‌شده
+  plan         String   // شناسه پلن
+  status       String   @default("pending") // pending | paid | failed
+  samanResNum  String   @unique // شماره پیگیری ما (ResNum)
+  samanRefNum  String?  @unique // یک رسید بانکی فقط برای یک سفارش
+  samanToken   String?  @unique // توکن صادرشده برای همین سفارش
+  samanTraceNo String?  // شماره پیگیری بانک (TraceNo)
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// رزرو جلسات خصوصی با استاد (قاری تأییدشده)
+// ============================================================
+model MasterBooking {
+  id            String   @id @default(cuid())
+  masterId      String
+  studentId     String
+  sessionId     String?
+  creditsSpent  Int      @default(1)
+  creditsValue  Int      // ارزش تومانی امتیاز مصرف‌شده
+  platformFee   Int      // کمیسون پلتفرم (تومان)
+  masterEarning Int      // سهم قاری (تومان)
+  status        String   @default("active") // active | completed | cancelled
+  rating        Int?
+  review        String?
+
+  master        User     @relation("MasterBookings", fields: [masterId], references: [id], onDelete: Cascade)
+  student       User     @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  session       RecitationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([masterId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// ============================================================
+// درخواست‌های تسویه قاریان
+// ============================================================
+model Settlement {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Int      // تومان
+  status        String   @default("pending") // pending | approved | paid | rejected
+  iban          String
+  accountHolder String
+  bankName      String
+  processedBy   String?
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}

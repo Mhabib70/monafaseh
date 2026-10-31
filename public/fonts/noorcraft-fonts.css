@@ -1,0 +1,33 @@
+/* NoorCraft local font definitions */
+
+/* Lalezar — chunky display font for big headings and brand */
+@font-face {
+  font-family: 'Lalezar';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lalezar.ttf') format('truetype');
+}
+
+/* Baloo Bhaijaan 2 — rounded body/heading font, friendly game-art vibe */
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-400.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-700.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/baloo-bhaijaan-2-800.ttf') format('truetype');
+}
