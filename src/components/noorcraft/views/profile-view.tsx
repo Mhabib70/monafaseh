@@ -1,24 +1,24 @@
 "use client";
 
 // ============================================================
-// ProfileView — صفحه پروفایل عمومی هر کاربر (سبک اینستاگرام)
-// آواتار رنک‌دار + آمار + مدارج + تحصیلات + مهارت‌ها + گالری +
-// شبکه‌های اجتماعی + کارت جلسه خصوصی
-// پروفایل خود کاربر: ویرایش گالری و شبکه‌ها فعال است.
+// ProfileView — صفحه پروفایل عمومی با ساختار اینستاگرام
+// هدر نام+بج → خط داشبورد/رنک → ردیف آواتار+۳آمار → نام/دسته/بیو →
+// دکمه‌های ویرایش/اشتراک‌گذاری → هایلایت مهارت‌ها → تب‌های
+// پست‌ها/درباره/شبکه‌ها → گرید ۳ستونه گالری با لایت‌باکس
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowRight, Loader2, Share2, Trash2, Plus, GraduationCap,
-  Award, Sparkles, Camera, Link2, Mic2, MapPin, X, UserRound,
+  Loader2, MoreVertical, ChevronLeft, LayoutGrid, UserRound, Link2,
+  Camera, Plus, X, Trash2, GraduationCap, Award, Mic2, MapPin,
+  Flame, CalendarDays, ExternalLink, Share2, LayoutDashboard,
 } from "lucide-react";
 import { NoorAvatar } from "../noor-avatar";
-import { NoorCard } from "../noor-card";
-import { NoorButton } from "../noor-button";
 import { VerifiedBadge } from "../verified-badge";
 import { useNoorStore } from "@/store/noor-store";
 import { useToast } from "@/hooks/use-toast";
 import { qariRankDef, qariBadgeLabel } from "@/lib/noorcraft/constants";
+import { TRUSTED_COMPETITIONS } from "@/lib/noorcraft/trusted-competitions";
 
 interface GalleryItem { url: string; thumb: string }
 
@@ -49,6 +49,8 @@ interface ProfileData {
   ranks: { requestType: string; competitionId: string; competitionYear: string; reviewedAt: string }[];
 }
 
+type Tab = "posts" | "about" | "socials";
+
 async function compressImage(file: File): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file);
@@ -66,11 +68,12 @@ async function compressImage(file: File): Promise<Blob> {
   }
 }
 
+const fa = (n: number) => n.toLocaleString("fa-IR");
+
 export function ProfileView() {
   const user = useNoorStore((s) => s.user);
   const setView = useNoorStore((s) => s.setView);
   const profileUserId = useNoorStore((s) => s.profileUserId);
-  const setProfileUserId = useNoorStore((s) => s.setProfileUserId);
   const { toast } = useToast();
 
   const targetId = profileUserId || user?.id || "";
@@ -81,6 +84,8 @@ export function ProfileView() {
   const [notFound, setNotFound] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("posts");
+  const [menuOpen, setMenuOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -115,7 +120,7 @@ export function ProfileView() {
         const d = await res.json();
         if (!d.ok) throw new Error(d.error);
       }
-      toast({ title: "تصاویر اضافه شد ✓" });
+      toast({ title: "پست اضافه شد ✓" });
       await load();
     } catch (e: unknown) {
       toast({
@@ -131,6 +136,7 @@ export function ProfileView() {
 
   async function removeImage(url: string) {
     setP((prev) => (prev ? { ...prev, gallery: prev.gallery.filter((g) => g.url !== url) } : prev));
+    setLightbox(null);
     try {
       const res = await fetch("/api/profile/gallery", {
         method: "DELETE",
@@ -145,6 +151,38 @@ export function ProfileView() {
     }
   }
 
+  async function shareProfile() {
+    if (!p) return;
+    const url = `${window.location.origin}/?user=${p.id}`;
+    try {
+      await navigator.share({ title: p.fullName, url });
+    } catch {
+      await navigator.clipboard?.writeText(url).catch(() => {});
+      toast({ title: "لینک پروفایل کپی شد ✓" });
+    }
+  }
+
+  async function bookSession() {
+    if (!p) return;
+    try {
+      const res = await fetch("/api/masters/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ masterId: p.id }),
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error);
+      toast({ title: "رزرو شد 🎉", description: "در حال انتقال به محفل..." });
+      setView("session-room");
+    } catch (e: unknown) {
+      toast({
+        title: "رزرو ناموفق",
+        description: e instanceof Error ? e.message : "دوباره تلاش کنید",
+        variant: "destructive",
+      });
+    }
+  }
+
   if (loading) {
     return (
       <div className="grid min-h-[60vh] place-items-center">
@@ -156,319 +194,402 @@ export function ProfileView() {
   if (notFound || !p) {
     return (
       <div className="grid min-h-[60vh] place-items-center px-4">
-        <NoorCard className="max-w-sm p-8 text-center">
+        <div className="text-center">
           <p className="text-muted-foreground">این صفحه پیدا نشد.</p>
-          <NoorButton variant="yellow" className="mt-4" onClick={() => setView("dashboard")}>
+          <button
+            onClick={() => setView("dashboard")}
+            className="mt-4 rounded-lg bg-noor-sky px-4 py-2 text-sm font-bold text-white"
+          >
             بازگشت
-          </NoorButton>
-        </NoorCard>
+          </button>
+        </div>
       </div>
     );
   }
 
   const rankDef = qariRankDef(p.qariRank);
   const rankColor = rankDef?.color ?? "#FFC400";
+  const metaLine = [p.recitationType, p.city].filter(Boolean).join(" · ");
+
+  const socials: { key: string; label: string; icon: string; href: string }[] = [];
+  if (p.social.eitaa) socials.push({ key: "eitaa", label: "ایتا", icon: "💬", href: `https://eitaa.com/${p.social.eitaa.replace(/^@/, "")}` });
+  if (p.social.telegram) socials.push({ key: "telegram", label: "تلگرام", icon: "✈️", href: `https://t.me/${p.social.telegram.replace(/^@/, "")}` });
+  if (p.social.instagram) socials.push({ key: "instagram", label: "اینستاگرام", icon: "📷", href: `https://instagram.com/${p.social.instagram.replace(/^@/, "")}` });
+  if (p.social.youtube) socials.push({ key: "youtube", label: "یوتیوب", icon: "▶️", href: p.social.youtube.startsWith("http") ? p.social.youtube : `https://youtube.com/@${p.social.youtube.replace(/^@/, "")}` });
+  if (p.social.website) socials.push({ key: "website", label: "وبسایت", icon: "🌐", href: p.social.website.startsWith("http") ? p.social.website : `https://${p.social.website}` });
+
+  const hasAbout = !!(p.education || p.honors || p.favoriteReciter || p.ranks.length > 0 || p.interests.length > 0 || p.skills.length > 0);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-noor-hero pb-16">
-      {/* کاور */}
-      <div
-        className="relative h-36 w-full sm:h-44"
-        style={{
-          background: rankDef
-            ? `linear-gradient(160deg, ${rankDef.color}30, transparent 70%), linear-gradient(160deg,#0c0b09,#17150f)`
-            : "linear-gradient(160deg,#0c0b09,#17150f)",
-        }}
-      >
-        <div
-          className="absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FFC400' stroke-width='1'%3E%3Cpath d='M22 0 L44 22 L22 44 L0 22 Z'/%3E%3C/g%3E%3C/svg%3E\")",
-          }}
-        />
-        <div className="mx-auto flex h-full max-w-2xl items-center justify-between px-4">
-          <span className="rounded-full bg-black/30 px-3 py-1 text-[11px] font-bold text-white/80">
-            {p.online ? "🟢 آنلاین" : "آفلاین"}
-          </span>
+    <div className="min-h-[calc(100vh-4rem)] bg-background pb-24" onClick={() => menuOpen && setMenuOpen(false)}>
+      <div className="mx-auto max-w-xl">
+        {/* ── ردیف نام و منو (هدر اینستاگرامی) ── */}
+        <div className="flex items-center gap-1.5 px-4 pt-4">
+          <h1 className="text-xl font-bold leading-none text-noor-navy dark:text-white">{p.fullName}</h1>
+          {p.verified && <VerifiedBadge size={17} rank={p.qariRank} />}
+          <div className="relative ms-auto">
+            <button
+              aria-label="منو"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+              className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute end-0 top-9 z-30 w-44 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {isOwn && (
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-bold transition hover:bg-muted"
+                    onClick={() => { setMenuOpen(false); setView("dashboard"); }}
+                  >
+                    <LayoutDashboard className="h-4 w-4" /> پنل کاربری
+                  </button>
+                )}
+                {isOwn && (
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-bold transition hover:bg-muted"
+                    onClick={() => { setMenuOpen(false); setView("auth"); }}
+                  >
+                    <UserRound className="h-4 w-4" /> ویرایش پروفایل
+                  </button>
+                )}
+                <button
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-bold transition hover:bg-muted"
+                  onClick={() => { setMenuOpen(false); shareProfile(); }}
+                >
+                  <Share2 className="h-4 w-4" /> اشتراک‌گذاری پروفایل
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── خط داشبورد (خودی) یا نشان رنک (دیگران) ── */}
+        <div className="px-4 pt-1">
+          {isOwn ? (
+            <button
+              onClick={() => setView("dashboard")}
+              className="flex items-center gap-1 text-[13px] font-bold text-noor-sky transition hover:opacity-80"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              پنل کاربری
+              <ChevronLeft className="h-3 w-3" />
+            </button>
+          ) : rankDef ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
+              style={{ background: `${rankDef.color}1a`, color: rankDef.color, border: `1px solid ${rankDef.color}55` }}
+            >
+              🏅 {rankDef.label}
+            </span>
+          ) : p.verified ? (
+            <span className="text-[11px] font-bold text-muted-foreground">قاری تأییدشده</span>
+          ) : null}
+        </div>
+
+        {/* ── ردیف آواتار و آمار ── */}
+        <div className="flex items-center gap-5 px-4 pt-3">
+          <div className="relative shrink-0">
+            <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(140deg, ${rankColor}, #FFC400)` }}>
+              <NoorAvatar
+                name={p.fullName}
+                color={p.avatarColor}
+                avatarUrl={p.avatarUrl}
+                gender={p.gender}
+                size="xl"
+              />
+            </div>
+            {p.online && (
+              <span className="absolute bottom-1 end-1 h-4 w-4 rounded-full border-2 border-background bg-noor-green" />
+            )}
+          </div>
+          <div className="flex flex-1 items-center justify-around text-center">
+            <Stat value={fa(p.gallery.length)} label="پست" />
+            <Stat value={fa(p.stats.noorPoints)} label="امتیاز نور" />
+            <Stat value={fa(p.stats.sessionsAttended)} label="محفل" />
+          </div>
+        </div>
+
+        {/* ── نام، دسته و بیو ── */}
+        <div className="px-4 pt-3">
+          <div className="text-sm font-bold text-noor-navy dark:text-white">{p.fullName}</div>
+          {metaLine && (
+            <div className="mt-0.5 flex items-center gap-1 text-[13px] text-muted-foreground">
+              <Mic2 className="h-3.5 w-3.5" />
+              {metaLine}
+            </div>
+          )}
+          {p.bio && <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-foreground/90">{p.bio}</p>}
+        </div>
+
+        {/* ── دکمه‌های اکشن ── */}
+        <div className="flex flex-col gap-1.5 px-4 pt-3">
+          {isOwn ? (
+            <button
+              onClick={() => setView("auth")}
+              className="w-full rounded-lg border border-noor-sky/60 py-1.5 text-sm font-bold text-noor-sky transition hover:bg-noor-sky/10"
+            >
+              ویرایش پروفایل
+            </button>
+          ) : p.privateSession ? (
+            <button
+              onClick={bookSession}
+              className="w-full rounded-lg py-2 text-sm font-black text-noor-navy shadow-sm transition hover:brightness-105"
+              style={{ background: "linear-gradient(140deg,#FFE58A,#FFC400 55%,#e09e00)" }}
+            >
+              رزرو جلسه خصوصی — {fa(p.privateSession.price)} امتیاز
+            </button>
+          ) : null}
           <button
-            onClick={async () => {
-              const url = `${window.location.origin}/?user=${p.id}`;
-              try {
-                await navigator.share({ title: p.fullName, url });
-              } catch {
-                await navigator.clipboard?.writeText(url).catch(() => {});
-                toast({ title: "لینک صفحه کپی شد ✓" });
-              }
-            }}
-            className="flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-black/50"
+            onClick={shareProfile}
+            className="w-full rounded-lg bg-muted py-1.5 text-sm font-bold text-foreground transition hover:bg-muted/70"
           >
-            <Share2 className="h-3.5 w-3.5" /> اشتراک‌گذاری
+            اشتراک‌گذاری پروفایل
           </button>
         </div>
-      </div>
 
-      <div className="mx-auto max-w-2xl px-4">
-        {/* هدر */}
-        <div className="-mt-12 flex items-end gap-4">
-          <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(140deg, ${rankColor}, #FFC400)` }}>
-            <NoorAvatar
-              name={p.fullName}
-              color={p.avatarColor}
-              avatarUrl={p.avatarUrl}
-              gender={p.gender}
-              size="xl"
-            />
-          </div>
-          {isOwn && (
-            <div className="mr-auto flex gap-2">
-              <button
-                onClick={() => setView("dashboard")}
-                className="rounded-xl bg-card px-3.5 py-2 text-xs font-bold shadow-sm transition hover:shadow-md"
-                title="پنل کاربری، امتیازها و تنظیمات"
-              >
-                پنل کاربری
-              </button>
-              <button
-                onClick={() => setView("auth")}
-                className="rounded-xl bg-card px-3.5 py-2 text-xs font-bold shadow-sm transition hover:shadow-md"
-              >
-                ویرایش
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-3">
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-xl font-black text-noor-navy dark:text-white">{p.fullName}</h1>
-            {p.verified && <VerifiedBadge size={18} rank={p.qariRank} />}
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            {rankDef && (
-              <span
-                className="rounded-full px-2 py-0.5 font-bold"
-                style={{ background: `${rankDef.color}1e`, color: rankDef.color, border: `1px solid ${rankDef.color}55` }}
-              >
-                🏅 {rankDef.label}
-              </span>
-            )}
-            {p.city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{p.city}</span>}
-            {p.recitationType && <span className="flex items-center gap-1"><Mic2 className="h-3 w-3" />{p.recitationType}</span>}
-            {p.favoriteReciter && <span className="flex items-center gap-1"><Award className="h-3 w-3" />اقتدا به {p.favoriteReciter}</span>}
-          </div>
-          {p.bio && <p className="mt-2 text-sm leading-7 text-foreground/90">{p.bio}</p>}
-        </div>
-
-        {/* آمار */}
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <NoorCard className="p-3">
-            <div className="text-lg font-black text-noor-navy dark:text-white">{p.stats.noorPoints.toLocaleString("fa-IR")}</div>
-            <div className="text-[10px] text-muted-foreground">امتیاز نور</div>
-          </NoorCard>
-          <NoorCard className="p-3">
-            <div className="text-lg font-black text-noor-navy dark:text-white">{p.stats.sessionsAttended.toLocaleString("fa-IR")}</div>
-            <div className="text-[10px] text-muted-foreground">محفل</div>
-          </NoorCard>
-          <NoorCard className="p-3">
-            <div className="text-lg font-black text-noor-navy dark:text-white">{p.stats.streak.toLocaleString("fa-IR")}</div>
-            <div className="text-[10px] text-muted-foreground">روز پیوسته</div>
-          </NoorCard>
-        </div>
-
-        {/* جلسه خصوصی */}
-        {p.privateSession && !isOwn && (
-          <NoorCard className="mt-4 flex items-center gap-3 border-noor-yellow/40 p-4">
-            <Sparkles className="h-6 w-6 shrink-0 text-noor-yellow" />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold">جلسه خصوصی با {p.fullName.split(" ")[0]}</div>
-              <div className="text-xs text-muted-foreground">
-                {p.privateSession.price.toLocaleString("fa-IR")} امتیاز برای هر جلسه
+        {/* ── هایلایت‌ها: مهارت‌ها به‌شکل دایره ── */}
+        {p.skills.length > 0 && (
+          <div className="no-scrollbar mt-4 flex gap-3 overflow-x-auto px-4 pb-1">
+            {p.skills.slice(0, 12).map((s) => (
+              <div key={s} className="flex w-[68px] shrink-0 flex-col items-center gap-1">
+                <div className="h-16 w-16 rounded-full border-2 p-[3px]" style={{ borderColor: `${rankColor}88` }}>
+                  <div className="grid h-full w-full place-items-center rounded-full bg-muted text-lg font-black text-noor-navy dark:text-white">
+                    {s.trim().charAt(0)}
+                  </div>
+                </div>
+                <span className="w-full truncate text-center text-[10px] text-muted-foreground" title={s}>{s}</span>
               </div>
-            </div>
-            <NoorButton
-              variant="yellow"
-              size="md"
-              onClick={async () => {
-                try {
-                  const res = await fetch("/api/masters/book", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ masterId: p.id }),
-                  });
-                  const d = await res.json();
-                  if (!d.ok) throw new Error(d.error);
-                  toast({ title: "رزرو شد 🎉", description: "در حال انتقال به محفل..." });
-                  setView("session-room");
-                } catch (e: unknown) {
-                  toast({
-                    title: "رزرو ناموفق",
-                    description: e instanceof Error ? e.message : "دوباره تلاش کنید",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              رزرو
-            </NoorButton>
-          </NoorCard>
-        )}
-
-        {/* درباره و تخصص‌ها */}
-        {(p.education || p.honors || p.skills.length > 0 || p.interests.length > 0) && (
-          <NoorCard className="mt-4 p-5">
-            <h3 className="flex items-center gap-2 text-sm font-black">
-              <GraduationCap className="h-4 w-4 text-noor-sky" /> درباره و تخصص‌ها
-            </h3>
-            <div className="mt-3 space-y-3 text-sm">
-              {p.education && (
-                <div className="flex items-start gap-2">
-                  <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-noor-sky" />
-                  <span>تحصیلات: <b>{p.education}</b></span>
-                </div>
-              )}
-              {p.honors && (
-                <div className="flex items-start gap-2">
-                  <Award className="mt-0.5 h-4 w-4 shrink-0 text-noor-yellow" />
-                  <span className="leading-6">مدارج و افتخارات: <b>{p.honors}</b></span>
-                </div>
-              )}
-              {p.skills.length > 0 && (
-                <div>
-                  <div className="mb-1.5 flex items-center gap-2 text-xs font-bold text-muted-foreground">
-                    <Sparkles className="h-3.5 w-3.5" /> مهارت‌های قرآنی
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {p.skills.map((sk) => (
-                      <span key={sk} className="rounded-full bg-noor-sky/10 px-2.5 py-1 text-[11px] font-bold text-noor-navy dark:text-sky-200">
-                        {sk}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {p.interests.length > 0 && (
-                <div>
-                  <div className="mb-1.5 text-xs font-bold text-muted-foreground">علاقه‌مندی‌ها</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {p.interests.map((it) => (
-                      <span key={it} className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold">{it}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </NoorCard>
-        )}
-
-        {/* شبکه‌های اجتماعی */}
-        {Object.values(p.social).some(Boolean) && (
-          <NoorCard className="mt-4 p-5">
-            <h3 className="flex items-center gap-2 text-sm font-black">
-              <Link2 className="h-4 w-4 text-noor-sky" /> شبکه‌های اجتماعی
-            </h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {p.social.eitaa && <SocialChip icon="💬" label="ایتا" href={`https://eitaa.com/${p.social.eitaa.replace(/^@/, "")}`} />}
-              {p.social.telegram && <SocialChip icon="✈️" label="تلگرام" href={`https://t.me/${p.social.telegram.replace(/^@/, "")}`} />}
-              {p.social.instagram && <SocialChip icon="📷" label="اینستاگرام" href={`https://instagram.com/${p.social.instagram.replace(/^@/, "")}`} />}
-              {p.social.youtube && <SocialChip icon="▶️" label="یوتیوب" href={p.social.youtube.startsWith("http") ? p.social.youtube : `https://youtube.com/@${p.social.youtube.replace(/^@/, "")}`} />}
-              {p.social.website && <SocialChip icon="🌐" label="وبسایت" href={p.social.website.startsWith("http") ? p.social.website : `https://${p.social.website}`} />}
-            </div>
-          </NoorCard>
-        )}
-
-        {/* گالری */}
-        <NoorCard className="mt-4 p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-black">
-              <Camera className="h-4 w-4 text-noor-yellow" /> گالری تصاویر
-              <span className="text-xs font-normal text-muted-foreground">
-                ({p.gallery.length.toLocaleString("fa-IR")} از ۱۰)
-              </span>
-            </h3>
+            ))}
           </div>
+        )}
 
-          {p.gallery.length === 0 ? (
-            <p className="rounded-xl bg-muted/30 p-4 text-center text-xs text-muted-foreground">
-              هنوز تصویری ثبت نشده است
-            </p>
-          ) : (
-            <div className="grid grid-cols-3 gap-1.5">
-              {p.gallery.map((g) => (
-                <div key={g.url} className="group relative aspect-square overflow-hidden rounded-xl">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={g.thumb}
-                    alt=""
-                    className="h-full w-full cursor-pointer object-cover transition hover:scale-105"
-                    onClick={() => setLightbox(g.url)}
-                  />
-                  {isOwn && (
-                    <button
-                      onClick={async () => {
-                        if (window.confirm("این تصویر حذف شود؟")) await removeImage(g.url);
-                      }}
-                      className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-white opacity-0 transition group-hover:opacity-100"
-                      title="حذف"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  )}
+        {/* ── تب‌ها ── */}
+        <div className="mt-4 border-t border-border">
+          <div className="grid grid-cols-3">
+            <TabButton icon={<LayoutGrid className="h-5 w-5" />} label="پست‌ها" active={tab === "posts"} onClick={() => setTab("posts")} />
+            <TabButton icon={<UserRound className="h-5 w-5" />} label="درباره" active={tab === "about"} onClick={() => setTab("about")} disabled={!hasAbout} />
+            <TabButton icon={<Link2 className="h-5 w-5" />} label="شبکه‌ها" active={tab === "socials"} onClick={() => setTab("socials")} disabled={socials.length === 0} />
+          </div>
+        </div>
+
+        {/* ── محتوای تب‌ها ── */}
+        {tab === "posts" && (
+          <div className="px-1 pt-1">
+            {p.gallery.length === 0 ? (
+              <div className="grid place-items-center py-14 text-center">
+                <div className="grid h-16 w-16 place-items-center rounded-full border-2 border-border">
+                  <Camera className="h-7 w-7 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
-          )}
+                <p className="mt-3 text-sm font-bold">هنوز پستی نیست</p>
+                {isOwn && (
+                  <>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => addImages(e.target.files)}
+                    />
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      disabled={uploading}
+                      className="mt-3 rounded-lg bg-noor-sky px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                    >
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "افزودن اولین پست"}
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-[3px]">
+                {p.gallery.map((g) => (
+                  <div key={g.url} className="group relative aspect-square">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={g.thumb}
+                      alt=""
+                      className="h-full w-full cursor-pointer object-cover"
+                      onClick={() => setLightbox(g.url)}
+                    />
+                    {isOwn && (
+                      <button
+                        aria-label="حذف"
+                        onClick={(e) => { e.stopPropagation(); if (window.confirm("این پست حذف شود؟")) removeImage(g.url); }}
+                        className="absolute end-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-white"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {isOwn && p.gallery.length < 10 && (
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="grid aspect-square place-items-center border border-dashed border-border text-muted-foreground transition hover:border-noor-sky/60 hover:text-foreground disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-7 w-7" />}
+                  </button>
+                )}
+                {isOwn && <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addImages(e.target.files)} />}
+              </div>
+            )}
+          </div>
+        )}
 
-          {isOwn && (
-            <div className="mt-3">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => addImages(e.target.files)}
-              />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading || p.gallery.length >= 10}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 p-3 text-xs font-bold text-muted-foreground transition hover:border-noor-yellow/50 hover:text-foreground disabled:opacity-50"
+        {tab === "about" && (
+          <div className="space-y-1 px-4 pt-3 text-sm">
+            {p.education && (
+              <Row icon={<GraduationCap className="h-4 w-4 text-noor-sky" />} label="تحصیلات" value={p.education} />
+            )}
+            {p.favoriteReciter && (
+              <Row icon={<Mic2 className="h-4 w-4 text-noor-sky" />} label="قاری اقتدا" value={p.favoriteReciter} />
+            )}
+            {p.honors && (
+              <div className="flex items-start gap-2 py-2">
+                <Award className="mt-0.5 h-4 w-4 shrink-0 text-noor-yellow" />
+                <div>
+                  <div className="text-xs text-muted-foreground">مدارج و افتخارات</div>
+                  <div className="whitespace-pre-line font-bold leading-6">{p.honors}</div>
+                </div>
+              </div>
+            )}
+            {p.ranks.length > 0 && (
+              <div className="flex items-start gap-2 py-2">
+                <Award className="mt-0.5 h-4 w-4 shrink-0 text-noor-yellow" />
+                <div className="min-w-0">
+                  <div className="text-xs text-muted-foreground">مقام‌های رسمی تأییدشده</div>
+                  <ul className="mt-1 space-y-1">
+                    {p.ranks.map((r, i) => {
+                      const comp = TRUSTED_COMPETITIONS.find((c) => c.id === r.competitionId);
+                      const tier = qariRankDef(r.requestType);
+                      return (
+                        <li key={i} className="text-[13px] leading-6">
+                          🏅 {comp?.name ?? r.competitionId}
+                          {r.competitionYear ? ` — سال ${r.competitionYear}` : ""}
+                          {tier ? ` (${tier.label})` : ""}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            )}
+            <Row icon={<Flame className="h-4 w-4 text-noor-coral" />} label="روز پیوسته" value={`${fa(p.stats.streak)} روز`} />
+            <Row
+              icon={<CalendarDays className="h-4 w-4 text-muted-foreground" />}
+              label="عضویت از"
+              value={new Date(p.memberSince).toLocaleDateString("fa-IR", { year: "numeric", month: "long" })}
+            />
+            {p.city && <Row icon={<MapPin className="h-4 w-4 text-muted-foreground" />} label="موقعیت" value={`${p.province ?? ""}${p.province && p.city ? " — " : ""}${p.city}`} />}
+            {p.skills.length > 0 && (
+              <div className="py-2">
+                <div className="text-xs text-muted-foreground">مهارت‌های قرآنی</div>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {p.skills.map((s) => (
+                    <span key={s} className="rounded-full bg-noor-sky/10 px-2.5 py-1 text-[11px] font-bold text-noor-navy dark:text-sky-200">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {p.interests.length > 0 && (
+              <div className="py-2">
+                <div className="text-xs text-muted-foreground">علاقه‌مندی‌ها</div>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {p.interests.map((it) => (
+                    <span key={it} className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold">{it}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "socials" && (
+          <div className="px-4 pt-3">
+            {socials.map((s) => (
+              <a
+                key={s.key}
+                href={s.href}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 border-b border-border py-3 last:border-0"
               >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                افزودن تصویر از گالری گوشی (فشرده‌سازی خودکار)
-              </button>
-            </div>
-          )}
-        </NoorCard>
+                <span className="text-lg">{s.icon}</span>
+                <span className="text-sm font-bold">{s.label}</span>
+                <ExternalLink className="ms-auto h-4 w-4 text-muted-foreground" />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* لایت‌باکس */}
+      {/* ── لایت‌باکس ── */}
       {lightbox && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4"
-          onClick={() => setLightbox(null)}
-        >
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4" onClick={() => setLightbox(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox} alt="" className="max-h-[90vh] max-w-full rounded-2xl object-contain" />
-          <button className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white">
+          <img src={lightbox} alt="" className="max-h-[85vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <button aria-label="بستن" className="absolute end-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white">
             <X className="h-5 w-5" />
           </button>
+          {isOwn && (
+            <button
+              aria-label="حذف"
+              onClick={(e) => { e.stopPropagation(); if (window.confirm("این پست حذف شود؟")) removeImage(lightbox); }}
+              className="absolute start-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-red-500/80 text-white"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function SocialChip({ icon, label, href }: { icon: string; label: string; href: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-bold transition hover:bg-noor-sky/15"
+    <div>
+      <div className="text-base font-black leading-tight text-noor-navy dark:text-white">{value}</div>
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function TabButton({
+  icon, label, active, onClick, disabled = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex flex-col items-center gap-0.5 border-t-2 py-2 text-[10px] font-bold transition ${
+        active ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"
+      } ${disabled ? "opacity-30" : "hover:text-foreground"}`}
     >
-      <span>{icon}</span>
+      {icon}
       {label}
-    </a>
+    </button>
+  );
+}
+
+function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 border-b border-border/60 py-2.5 last:border-0">
+      {icon}
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="ms-auto truncate text-end font-bold">{value}</span>
+    </div>
   );
 }

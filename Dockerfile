@@ -17,16 +17,21 @@
 # ─── Stage 1: deps ────────────────────────────────────────────
 FROM node:22-alpine AS deps
 
-# دریافت نسخه‌ی دقیق Bun از npm registry؛ این مرحله فقط برای نصب dependencyها است.
-RUN npm install --global --no-audit --no-fund bun@1.3.4
+# شبکه‌های پرنوسان: retry/timeout قوی برای npm
+# (npmmirror روی این شبکه throttle می‌شود و اتصال‌ها mid-download ریست می‌شوند؛
+#  npmjs.org/Cloudflare پایدارتر است — bun install هم بدون timeout گیر می‌کند)
+ENV npm_config_fetch_retries=10
+ENV npm_config_fetch_retry_mintimeout=20000
+ENV npm_config_fetch_retry_maxtimeout=120000
+ENV npm_config_fetch_timeout=600000
 
 WORKDIR /app
 
 # کپی manifest و lockfile واقعی پروژه برای cache بهتر
-COPY package.json bun.lock ./
+COPY package.json package-lock.json ./
 
-# نصب نسخه‌های دقیق ثبت‌شده در bun.lock
-RUN bun install --frozen-lockfile
+# نصب نسخه‌های دقیق ثبت‌شده در package-lock.json
+RUN npm ci --no-audit --no-fund
 
 # ─── Stage 2: builder ─────────────────────────────────────────
 FROM node:22-alpine AS builder

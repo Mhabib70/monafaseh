@@ -2,7 +2,7 @@
 // استراتژی ساده و امن:
 //  • صفحات و استاتیک‌ها: network-first با fallback به کش (آفلاین پوسته سایت)
 //  • APIها هرگز کش نمی‌شوند
-const CACHE = "monafaseh-v1";
+const CACHE = "monafaseh-v2";
 const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
