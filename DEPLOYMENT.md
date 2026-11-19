@@ -1,8 +1,6 @@
-# استقرار منافسه همراه ودا
+# راهنمای استقرار و CI/CD منافسه
 
-سرویس Docker منافسه از ریشهٔ مخزن و همراه سایر سرویس‌های ودا مدیریت می‌شود؛ Compose مستقل این پوشه حذف شده است.
-
-## اجرای محلی
+## اجرای محلی همراه ودا
 
 از ریشهٔ پروژه:
 
@@ -10,14 +8,29 @@
 ./debug.sh up-d
 ```
 
-منافِسه روی `http://localhost:3423` در دسترس است. لاگ همهٔ سرویس‌ها با `./debug.sh logs` دیده می‌شود. پورت میزبان را می‌توان با `MONAFASEH_PORT` در `.env.local` تغییر داد.
+منافسه روی `http://localhost:3423` در دسترس است. لاگ همهٔ سرویس‌ها با `./debug.sh logs` دیده می‌شود. پورت میزبان را می‌توان با `MONAFASEH_PORT` در `.env.local` تغییر داد.
 
-## استقرار
+## استقرار خودکار با GitHub Actions
 
-مقادیر `MONAFASEH_NEXTAUTH_URL` و `MONAFASEH_SITE_URL` را در `.env.production` روی دامنهٔ نهایی تنظیم کنید. اگر برای منافسه secret جدا می‌خواهید، `MONAFASEH_NEXTAUTH_SECRET` را تنظیم کنید؛ در غیر این صورت از `JWT_SECRET` ودا استفاده می‌شود. سپس `./deploy.sh deploy` هر سه image برنامه را می‌سازد و در کنار ودا اجرا می‌کند.
+مخزن دارای دو workflow در پوشه `.github/workflows/` است:
 
-پورت داخلی منافسه `3000` است و پورت میزبان به‌صورت پیش‌فرض `3423` است. در Compose استقرار، پورت فقط روی `127.0.0.1` منتشر می‌شود؛ reverse proxy دامنه باید به `127.0.0.1:3423` وصل شود.
+1. **CI (`ci.yml`)**: روی هر Pull Request و پوش به `main` اجرا می‌شود و `tsc --noEmit`، `npm run lint` و `npm run build` را بررسی می‌کند.
+2. **Build & Deploy (`deploy.yml`)**: پس از مرج به `main` (یا اجرای دستی)، تصویر Docker را ساخته و روی `ghcr.io` منتشر می‌کند و در صورت تنظیم Secretهای سرور، از طریق SSH به‌طور خودکار دیپلوی انجام می‌دهد.
+
+### Secretهای مورد نیاز در مخزن گیت‌هاب
+
+در مسیر **Settings -> Secrets and variables -> Actions** مقادیر زیر را اضافه کنید:
+
+- `SERVER_HOST`: آی‌پی یا دامنه سرور
+- `SERVER_USER`: نام کاربری SSH (پیش‌فرض: `root`)
+- `SERVER_SSH_KEY`: کلید خصوصی SSH برای اتصال به سرور
+- `SERVER_PORT`: پورت SSH (اختیاری، پیش‌فرض: `22`)
+- `DEPLOY_PATH`: مسیر پروژه یا فایل `.env.production` روی سرور (اختیاری، پیش‌فرض: `/opt/monafaseh`)
+
+## استقرار دستی (Docker / Compose)
+
+مقادیر `MONAFASEH_NEXTAUTH_URL` و `MONAFASEH_SITE_URL` را در `.env.production` روی دامنهٔ نهایی تنظیم کنید. پورت داخلی منافسه `3000` است و در استقرار استاندارد روی `127.0.0.1:3423` به reverse proxy (مانند Caddy یا Nginx) متصل می‌شود.
 
 ## نگه‌داری داده
 
-SQLite و فایل‌های آپلودی در volumeهای `monafaseh_monafaseh-db` و `monafaseh_monafaseh-uploads` ذخیره می‌شوند. `./debug.sh reset` آن‌ها را حذف نمی‌کند. حذف دستی volumeها دیتابیس و فایل‌های کاربران را از بین می‌برد؛ پیش از آن backup بگیرید.
+SQLite و فایل‌های آپلودی در volumeهای `monafaseh_monafaseh-db` و `monafaseh_monafaseh-uploads` ذخیره می‌شوند و در به‌روزرسانی‌های خودکار یا دستی حفظ می‌گردند.

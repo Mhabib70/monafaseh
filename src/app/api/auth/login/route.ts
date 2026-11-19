@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-// Generate a simple token
-function generateToken(userId: string): string {
-  const payload = `${userId}.${Date.now()}.${Math.random().toString(36).slice(2)}`;
-  return Buffer.from(payload).toString("base64");
+function generateToken(): string {
+  return randomBytes(32).toString("hex");
 }
 
 // ============================================================
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate token
-    const token = generateToken(user.id);
+    const token = generateToken();
 
     // Store session in database
     await db.session.create({
@@ -137,9 +136,13 @@ export async function POST(request: NextRequest) {
       user: fullUser,
     });
 
+    const isHttps =
+      request.headers.get("x-forwarded-proto") === "https" ||
+      request.nextUrl.protocol === "https:";
+
     response.cookies.set("monafaseh-token", token, {
       httpOnly: true,
-      secure: false,
+      secure: isHttps,
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60,

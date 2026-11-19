@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNoorStore } from "@/store/noor-store";
 import type { ViewName } from "@/lib/noorcraft/types";
@@ -8,26 +9,100 @@ import { NoorHeader } from "@/components/noorcraft/noor-header";
 import { NoorFooter } from "@/components/noorcraft/noor-footer";
 import { ErrorBoundary } from "@/components/noorcraft/error-boundary";
 import { LandingView } from "@/components/noorcraft/views/landing-view";
-import { AuthView } from "@/components/noorcraft/views/auth-view";
-import { DashboardView } from "@/components/noorcraft/views/dashboard-view";
-import { SessionsView } from "@/components/noorcraft/views/sessions-view";
-import { CreateSessionView } from "@/components/noorcraft/views/create-session-view";
-import { SessionRoomView } from "@/components/noorcraft/views/session-room-view";
-import { ResultsView } from "@/components/noorcraft/views/results-view";
-import { LoungeView } from "@/components/noorcraft/views/lounge-view";
-import { LoungeRoomView } from "@/components/noorcraft/views/lounge-room-view";
-import { ChallengeView } from "@/components/noorcraft/views/challenge-view";
-import { BlogView } from "@/components/noorcraft/views/blog-view";
-import { AdminView } from "@/components/noorcraft/views/admin-view";
-import { VerificationView } from "@/components/noorcraft/views/verification-view";
-import { BuyCreditsView } from "@/components/noorcraft/views/buy-credits-view";
-import { MastersView } from "@/components/noorcraft/views/masters-view";
-import { BankInfoView } from "@/components/noorcraft/views/bank-info-view";
-import { DonateView } from "@/components/noorcraft/views/donate-view";
 import { EitaaMiniApp } from "@/components/noorcraft/eitaa-mini-app";
 import { BottomNav } from "@/components/noorcraft/bottom-nav";
-import { HomeFeedView } from "@/components/noorcraft/views/home-feed-view";
-import { ProfileView } from "@/components/noorcraft/views/profile-view";
+
+function ViewLoadingFallback() {
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
+      <div className="mt-4 h-4 w-72 animate-pulse rounded bg-muted" />
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((k) => (
+          <div key={k} className="h-44 animate-pulse rounded-2xl border border-border bg-card" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const AuthView = dynamic(
+  () => import("@/components/noorcraft/views/auth-view").then((m) => m.AuthView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const DashboardView = dynamic(
+  () => import("@/components/noorcraft/views/dashboard-view").then((m) => m.DashboardView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const SessionsView = dynamic(
+  () => import("@/components/noorcraft/views/sessions-view").then((m) => m.SessionsView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const CreateSessionView = dynamic(
+  () =>
+    import("@/components/noorcraft/views/create-session-view").then(
+      (m) => m.CreateSessionView,
+    ),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const SessionRoomView = dynamic(
+  () =>
+    import("@/components/noorcraft/views/session-room-view").then((m) => m.SessionRoomView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const ResultsView = dynamic(
+  () => import("@/components/noorcraft/views/results-view").then((m) => m.ResultsView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const LoungeView = dynamic(
+  () => import("@/components/noorcraft/views/lounge-view").then((m) => m.LoungeView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const LoungeRoomView = dynamic(
+  () => import("@/components/noorcraft/views/lounge-room-view").then((m) => m.LoungeRoomView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const ChallengeView = dynamic(
+  () => import("@/components/noorcraft/views/challenge-view").then((m) => m.ChallengeView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const BlogView = dynamic(
+  () => import("@/components/noorcraft/views/blog-view").then((m) => m.BlogView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const AdminView = dynamic(
+  () => import("@/components/noorcraft/views/admin-view").then((m) => m.AdminView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const VerificationView = dynamic(
+  () =>
+    import("@/components/noorcraft/views/verification-view").then((m) => m.VerificationView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const BuyCreditsView = dynamic(
+  () => import("@/components/noorcraft/views/buy-credits-view").then((m) => m.BuyCreditsView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const MastersView = dynamic(
+  () => import("@/components/noorcraft/views/masters-view").then((m) => m.MastersView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const BankInfoView = dynamic(
+  () => import("@/components/noorcraft/views/bank-info-view").then((m) => m.BankInfoView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const DonateView = dynamic(
+  () => import("@/components/noorcraft/views/donate-view").then((m) => m.DonateView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const HomeFeedView = dynamic(
+  () => import("@/components/noorcraft/views/home-feed-view").then((m) => m.HomeFeedView),
+  { loading: () => <ViewLoadingFallback /> },
+);
+const ProfileView = dynamic(
+  () => import("@/components/noorcraft/views/profile-view").then((m) => m.ProfileView),
+  { loading: () => <ViewLoadingFallback /> },
+);
 
 export default function Home() {
   const view = useNoorStore((s) => s.view);
@@ -37,17 +112,9 @@ export default function Home() {
   const signIn = useNoorStore((s) => s.signIn);
   const setActiveSession = useNoorStore((s) => s.setActiveSession);
 
-  // ============================================================
-  // لینک‌های مستقیم (deep links) — برای پیام‌های کانال ایتا
-  //   /?view=sessions          → فهرست محافل
-  //   /?view=challenge         → صفحه چالش
-  //   /?view=masters           → فهرست استادان
-  //   /?session=<id>           → پیوستن مستقیم به یک محفل مشخص
-  // ============================================================
   const deepLinkDone = useRef(false);
   const userLinkDone = useRef(false);
 
-  // لینک مستقیم پروفایل عمومی: /?user=ID — بدون نیاز به لاگین
   useEffect(() => {
     if (userLinkDone.current) return;
     userLinkDone.current = true;
@@ -86,27 +153,20 @@ export default function Home() {
         sessionStorage.setItem("monafaseh:pendingSession", requestedSession);
         setView("sessions");
       }
-    } catch {
-      // بدون دسترسی به URL — بی‌صدا رد شو
-    }
+    } catch {}
   }, [setView]);
 
-  // Auto-restore user from cookie on mount — so users stay logged in across reloads.
   useEffect(() => {
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (data.ok && data.user) {
           signIn(data.user);
-          // کاربران لاگین‌شده روی لندینگ می‌مانند — خودشان انتخاب می‌کنند کجا بروند
         }
       })
-      .catch(() => {
-        // Not logged in — silently ignore; user can still use landing page.
-      });
-  }, [signIn, view, setView]);
+      .catch(() => {});
+  }, [signIn]);
 
-  // Guard: protected views require a user
   useEffect(() => {
     const needsAuth =
       view === "feed" ||
@@ -119,7 +179,6 @@ export default function Home() {
       view === "challenge" ||
       view === "verification" ||
       view === "buy-credits" ||
-      view === "masters" ||
       view === "bank-info" ||
       view === "donate";
     if (needsAuth && !user) {
@@ -127,7 +186,6 @@ export default function Home() {
     }
   }, [view, user, setView]);
 
-  // بعد از ورود کاربر: لینک مستقیم را اجرا کن (view درخواستی یا پیوستن به محفل)
   useEffect(() => {
     if (!user || deepLinkDone.current) return;
     deepLinkDone.current = true;
@@ -180,11 +238,10 @@ export default function Home() {
     }
   }, [user, setView, setActiveSession]);
 
-  // Hide footer for immersive views
   const immersive = view === "session-room";
 
   return (
-    <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
+    <div className="flex min-h-screen flex-col pb-16 md:pb-0">
       <EitaaMiniApp />
       <NoorHeader />
       <main className="flex-1">
@@ -192,10 +249,10 @@ export default function Home() {
           <AnimatePresence mode="wait">
             <motion.div
               key={view}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
             >
               {view === "landing" && <LandingView />}
               {view === "feed" && user && <HomeFeedView />}
@@ -214,7 +271,7 @@ export default function Home() {
               {view === "admin" && user && <AdminView />}
               {view === "verification" && user && <VerificationView />}
               {view === "buy-credits" && user && <BuyCreditsView />}
-              {view === "masters" && user && <MastersView />}
+              {view === "masters" && <MastersView />}
               {view === "bank-info" && user && <BankInfoView />}
               {view === "donate" && user && <DonateView />}
             </motion.div>

@@ -6,6 +6,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_001",
     title: "محفل ترتیل آیات نور",
+    hostId: "seed-host",
     hostName: "حاج محمود رضایی",
     hostGender: "male",
     genderRestriction: "male",
@@ -26,6 +27,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_002",
     title: "سحرگاهان بحر سبعه",
+    hostId: "seed-host",
     hostName: "قاریه فاطمه حسینی",
     hostGender: "female",
     genderRestriction: "female",
@@ -46,6 +48,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_003",
     title: "مجلس عبدالباسط ویژه",
+    hostId: "seed-host",
     hostName: "استاد علی کاظمی",
     hostGender: "male",
     genderRestriction: "male",
@@ -66,6 +69,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_004",
     title: "حلقه ذکر یس و طه",
+    hostId: "seed-host",
     hostName: "حاج محمد امینی",
     hostGender: "male",
     genderRestriction: "male",
@@ -86,6 +90,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_005",
     title: "تفسیر کوتاه فجر",
+    hostId: "seed-host",
     hostName: "حجت‌الاسلام رحیمی",
     hostGender: "male",
     genderRestriction: "male",
@@ -106,6 +111,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_006",
     title: "تلاوت شب‌زنده‌داران",
+    hostId: "seed-host",
     hostName: "قاریه زهرا موسوی",
     hostGender: "female",
     genderRestriction: "female",
@@ -126,6 +132,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_007",
     title: "تمرین تجوید مبتدی",
+    hostId: "seed-host",
     hostName: "استاد رضایی",
     hostGender: "male",
     genderRestriction: "male",
@@ -146,6 +153,7 @@ export const MOCK_SESSIONS: SessionDetail[] = [
   {
     id: "s_008",
     title: "محفل خصوصی خانوادگی",
+    hostId: "seed-host",
     hostName: "خانم صادقی",
     hostGender: "female",
     genderRestriction: "female",

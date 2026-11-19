@@ -106,7 +106,10 @@ export function RecitationRating({ open, onClose }: RecitationRatingProps) {
                 <div className="text-xs text-muted-foreground">میانگین امتیاز</div>
                 <div className="mt-1 flex items-center justify-center gap-2">
                   <span className="font-display text-4xl text-noor-navy dark:text-white">
-                    {avgRating.toFixed(1).toLocaleString("fa-IR")}
+                    {avgRating.toLocaleString("fa-IR", {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
                   </span>
                   <span className="text-lg text-muted-foreground">/ ۵</span>
                   <div className="flex">

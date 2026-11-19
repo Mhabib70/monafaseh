@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-function generateToken(userId: string): string {
-  const payload = `${userId}.${Date.now()}.${Math.random().toString(36).slice(2)}`;
-  return Buffer.from(payload).toString("base64");
+function generateToken(): string {
+  return randomBytes(32).toString("hex");
 }
 
 export async function POST(request: NextRequest) {
@@ -32,14 +32,23 @@ export async function POST(request: NextRequest) {
       avatarUrl,
     } = body;
 
-    if (!fullName || !email || !password || !phone) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+
+    if (!fullName || !normalizedEmail || !password || !phone) {
       return NextResponse.json(
         { ok: false, error: "نام، ایمیل، رمز عبور و شماره تماس الزامی هستند" },
         { status: 400 },
       );
     }
 
-    const existing = await db.user.findUnique({ where: { email } });
+    if (String(password).length < 6) {
+      return NextResponse.json(
+        { ok: false, error: "رمز عبور باید حداقل ۶ نویسه باشد" },
+        { status: 400 },
+      );
+    }
+
+    const existing = await db.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return NextResponse.json(
         { ok: false, error: "این ایمیل قبلاً ثبت شده است" },
@@ -80,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const user = await db.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         passwordHash,
         fullName,
         age: age ? parseInt(age) : null,
@@ -131,7 +140,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Auto-login: create session
-    const token = generateToken(user.id);
+    const token = generateToken();
     await db.session.create({
       data: {
         sessionToken: token,
@@ -189,9 +198,13 @@ export async function POST(request: NextRequest) {
       user: fullUser,
     });
 
+    const isHttps =
+      request.headers.get("x-forwarded-proto") === "https" ||
+      request.nextUrl.protocol === "https:";
+
     response.cookies.set("monafaseh-token", token, {
       httpOnly: true,
-      secure: false,
+      secure: isHttps,
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60,

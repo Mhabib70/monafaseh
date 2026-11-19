@@ -1,0 +1,91 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push runner image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runner
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Production Server
+    needs: docker
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER || 'root' }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            DEPLOY_DIR="${{ secrets.DEPLOY_PATH || '/opt/monafaseh' }}"
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+            if [ -f "./deploy.sh" ]; then
+              git pull --ff-only
+              ./deploy.sh deploy
+            elif [ -f "docker-compose.yml" ] || [ -f "compose.yaml" ]; then
+              docker compose pull
+              docker compose up -d --remove-orphans
+            else
+              echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+              docker pull ghcr.io/${{ github.repository }}:latest
+              docker stop monafaseh || true
+              docker rm monafaseh || true
+              docker run -d \
+                --name monafaseh \
+                --restart unless-stopped \
+                -p 127.0.0.1:3423:3000 \
+                --env-file "$DEPLOY_DIR/.env.production" \
+                -v monafaseh_db:/app/db \
+                -v monafaseh_uploads:/app/public/uploads \
+                ghcr.io/${{ github.repository }}:latest
+            fi

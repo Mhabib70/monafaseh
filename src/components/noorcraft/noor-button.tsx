@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 
-type Variant = "yellow" | "coral" | "green" | "sky" | "navy" | "ghost";
+type Variant = "yellow" | "coral" | "green" | "sky" | "navy" | "ghost" | "outline";
 type Size = "sm" | "md" | "lg" | "xl";
 
 interface NoorButtonProps
@@ -16,20 +16,27 @@ interface NoorButtonProps
 }
 
 const variantClasses: Record<Variant, string> = {
-  yellow: "bg-noor-yellow text-noor-navy shadow-chunky-yellow hover:brightness-105",
-  coral: "bg-noor-coral text-white shadow-chunky-coral hover:brightness-105",
-  green: "bg-noor-green text-noor-navy shadow-chunky-green hover:brightness-105",
-  sky: "bg-noor-sky text-noor-navy shadow-chunky-sky hover:brightness-105",
-  navy: "bg-noor-navy text-white shadow-chunky hover:brightness-110",
+  yellow:
+    "bg-[#b8860b] text-white hover:bg-[#a17408] dark:bg-[#e8c766] dark:text-[#141006] dark:hover:bg-[#f0d37b]",
+  coral:
+    "bg-[#c93b3b] text-white hover:bg-[#b53232] dark:bg-[#e56969] dark:text-[#160808] dark:hover:bg-[#ec7c7c]",
+  green:
+    "bg-[#16803d] text-white hover:bg-[#136c33] dark:bg-[#34c76b] dark:text-[#07190d] dark:hover:bg-[#49d47d]",
+  sky:
+    "bg-[#0284c7] text-white hover:bg-[#0369a1] dark:bg-[#38bdf8] dark:text-[#061824] dark:hover:bg-[#5ecafa]",
+  navy:
+    "bg-foreground text-background hover:opacity-90",
   ghost:
-    "bg-white/60 dark:bg-transparent text-noor-navy dark:text-white border-2 border-noor-navy/30 dark:border-white/30 hover:bg-noor-navy/5 dark:hover:bg-noor-navy/5 dark:hover:bg-white/5",
+    "bg-transparent text-foreground border border-border hover:bg-secondary/70",
+  outline:
+    "bg-card text-foreground border border-border hover:bg-secondary",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-sm rounded-lg",
-  md: "px-4 py-2 text-sm rounded-xl",
-  lg: "px-6 py-3 text-base rounded-2xl",
-  xl: "px-8 py-4 text-lg rounded-2xl",
+  sm: "min-h-[36px] px-3.5 py-1.5 text-xs rounded-lg",
+  md: "min-h-[40px] px-4 py-2 text-sm rounded-xl",
+  lg: "min-h-[44px] px-5 py-2.5 text-sm rounded-xl",
+  xl: "min-h-[48px] px-6 py-3 text-base rounded-xl",
 };
 
 export const NoorButton = React.forwardRef<
@@ -51,11 +58,10 @@ export const NoorButton = React.forwardRef<
   return (
     <motion.button
       ref={ref}
-      whileHover={{ y: -2 }}
-      whileTap={{ y: 2, scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 500, damping: 22 }}
+      whileTap={disabled ? undefined : { scale: 0.98 }}
+      transition={{ duration: 0.14 }}
       className={cn(
-        "relative inline-flex items-center justify-center gap-2 font-rounded font-bold transition-[filter,box-shadow] disabled:cursor-not-allowed disabled:opacity-50",
+        "relative inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 font-rounded font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],
         className,
@@ -63,9 +69,9 @@ export const NoorButton = React.forwardRef<
       disabled={disabled}
       {...(rest as React.ComponentProps<typeof motion.button>)}
     >
-      {leftIcon ? <span className="grid place-items-center">{leftIcon}</span> : null}
+      {leftIcon ? <span className="grid shrink-0 place-items-center">{leftIcon}</span> : null}
       <span>{children}</span>
-      {rightIcon ? <span className="grid place-items-center">{rightIcon}</span> : null}
+      {rightIcon ? <span className="grid shrink-0 place-items-center">{rightIcon}</span> : null}
     </motion.button>
   );
 });

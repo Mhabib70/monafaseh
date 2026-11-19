@@ -70,11 +70,11 @@ const schema = z.object({
   recitationType: z.string().min(1, "نوع تلاوت را انتخاب کنید"),
   favoriteReciter: z.string().min(1, "سبک استاد را انتخاب کنید"),
   capacity: z
-    .number({ invalid_type_error: "ظرفیت را به عدد وارد کنید" })
+    .number({ message: "ظرفیت را به عدد وارد کنید" })
     .int()
     .min(2, "حداقل ۲ نفر")
     .max(50, "حداکثر ۵۰ نفر"),
-  isPrivate: z.boolean().default(false),
+  isPrivate: z.boolean(),
   password: z.string().optional(),
 });
 

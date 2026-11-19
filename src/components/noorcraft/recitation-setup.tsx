@@ -89,14 +89,20 @@ export function RecitationSetup({ open, onClose, onStart }: RecitationSetupProps
   // so we include everyone who joined the session — even before WebRTC connects.
   // Also merge with WebRTC-based remoteParticipants for real-time updates.
   useEffect(() => {
-    if (!open || !activeSession) {
-      if (open) {
-        setParticipants(buildInitialParticipants(user, remoteParticipants));
-      }
-      return;
-    }
+    if (!open) return;
 
     let cancelled = false;
+
+    if (!activeSession) {
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setParticipants(buildInitialParticipants(user, remoteParticipants));
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     async function fetchApiParticipants() {
       try {

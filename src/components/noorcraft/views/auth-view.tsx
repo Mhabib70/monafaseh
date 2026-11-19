@@ -67,7 +67,7 @@ const registerSchema = z.object({
     .min(3, "نام و نام خانوادگی حداقل ۳ نویسه باشد")
     .max(60, "نام بسیار طولانی است"),
   age: z
-    .number({ invalid_type_error: "سن را به عدد وارد کنید" })
+    .number({ message: "سن را به عدد وارد کنید" })
     .int("سن باید عدد صحیح باشد")
     .min(8, "حداقل سن ۸ سال است")
     .max(99, "حداکثر سن ۹۹ سال است"),
@@ -90,7 +90,7 @@ const registerSchema = z.object({
   recitationSkills: z
     .array(z.string())
     .min(1, "حداقل یک مهارت تلاوت انتخاب کنید"),
-  interests: z.array(z.string()).default([]),
+  interests: z.array(z.string()),
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -228,6 +228,12 @@ export function AuthView() {
   // Calculate live profile completion
   const liveCompletion = calculateProfileCompletion({
     ...watchedValues,
+    gender:
+      watchedValues.gender === "male" || watchedValues.gender === "female"
+        ? watchedValues.gender
+        : null,
+    recitationType: watchedValues.recitationType as RecitationType,
+    reciterNationality: watchedValues.reciterNationality as ReciterNationality,
     avatarUrl,
   });
 
