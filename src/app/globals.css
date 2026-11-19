@@ -38,7 +38,7 @@
   src: url('/fonts/amiri-quran.ttf') format('truetype');
 }
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -95,38 +95,38 @@
 :root {
   --radius: 0.875rem;
   color-scheme: light;
-  /* تم روشن «کاغذ مصحف» — کرم گرم با طلایی سوخته */
+  /* تم روشن «کاغذ مصحف» — کرم گرم با طلایی سوخته خوانا */
   --background: #fdf9ef;
-  --foreground: #2a2110;
+  --foreground: #21190c;
   --card: #fffdf7;
-  --card-foreground: #2a2110;
+  --card-foreground: #21190c;
   --popover: #fffdf7;
-  --popover-foreground: #2a2110;
-  --primary: #FFD700;
-  --primary-foreground: #4a3400;
+  --popover-foreground: #21190c;
+  --primary: #b8860b;
+  --primary-foreground: #ffffff;
   --secondary: #f3ead6;
-  --secondary-foreground: #5a4300;
+  --secondary-foreground: #4d3904;
   --muted: #f3ead6;
-  --muted-foreground: #7a6a45;
-  --accent: #87CEEB;
-  --accent-foreground: #123243;
-  --destructive: #e05555;
-  --border: #d9c39a;
-  --input: #d9c39a;
-  --ring: #d9a900;
-  --chart-1: #87CEEB;
-  --chart-2: #FFD700;
-  --chart-3: #FF7F7F;
-  --chart-4: #7CFC00;
-  --chart-5: #5a4300;
+  --muted-foreground: #665736;
+  --accent: #e6f2f8;
+  --accent-foreground: #0f3447;
+  --destructive: #c93b3b;
+  --border: #dfd0b2;
+  --input: #d9c59e;
+  --ring: #b8860b;
+  --chart-1: #0284c7;
+  --chart-2: #b8860b;
+  --chart-3: #c93b3b;
+  --chart-4: #16803d;
+  --chart-5: #4d3904;
   --sidebar: #fffdf7;
-  --sidebar-foreground: #2a2110;
-  --sidebar-primary: #FFD700;
-  --sidebar-primary-foreground: #4a3400;
+  --sidebar-foreground: #21190c;
+  --sidebar-primary: #b8860b;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f3ead6;
-  --sidebar-accent-foreground: #5a4300;
+  --sidebar-accent-foreground: #4d3904;
   --sidebar-border: #e5d9bd;
-  --sidebar-ring: #d9a900;
+  --sidebar-ring: #b8860b;
 }
 
 .dark {
@@ -185,12 +185,14 @@
     font-family: "Lalezar", var(--font-vazirmatn), system-ui, sans-serif !important;
     font-weight: 400 !important;
     letter-spacing: 0;
-    line-height: 1.15;
+    line-height: 1.18;
+    text-wrap: balance;
   }
   h4, h5, h6 {
     font-family: "Baloo Bhaijaan 2", var(--font-vazirmatn), system-ui, sans-serif !important;
     font-weight: 700;
     letter-spacing: -0.01em;
+    text-wrap: balance;
   }
 }
 
@@ -225,57 +227,60 @@
     background: linear-gradient(135deg, #0c0b09 0%, #17150f 50%, #221f18 100%);
   }
 
-  /* === Colorful graphic cards for headings & texts (light-mode-friendly) === */
+  /* === Refined single-elevation Editorial Islamic Craft surfaces === */
   .noor-card-sky {
-    background: linear-gradient(135deg, rgba(135, 206, 235, 0.18), rgba(135, 206, 235, 0.06));
-    border: 2px solid rgba(135, 206, 235, 0.45);
-    box-shadow: 0 6px 0 0 rgba(74, 155, 191, 0.18), 0 14px 28px -10px rgba(135, 206, 235, 0.35);
+    background: var(--card);
+    border: 1px solid rgba(2, 132, 199, 0.28);
+    box-shadow: 0 4px 16px -8px rgba(15, 52, 71, 0.08);
   }
   .dark .noor-card-sky {
-    background: linear-gradient(135deg, rgba(135, 206, 235, 0.15), rgba(135, 206, 235, 0.04));
-    border-color: rgba(135, 206, 235, 0.3);
+    background: var(--card);
+    border-color: rgba(135, 206, 235, 0.22);
+    box-shadow: none;
   }
 
   .noor-card-yellow {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 215, 0, 0.06));
-    border: 2px solid rgba(255, 215, 0, 0.5);
-    box-shadow: 0 6px 0 0 rgba(201, 168, 0, 0.2), 0 14px 28px -10px rgba(255, 215, 0, 0.4);
+    background: var(--card);
+    border: 1px solid rgba(184, 134, 11, 0.30);
+    box-shadow: 0 4px 16px -8px rgba(120, 86, 10, 0.10);
   }
   .dark .noor-card-yellow {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.04));
-    border-color: rgba(255, 215, 0, 0.3);
+    background: var(--card);
+    border-color: rgba(232, 199, 102, 0.24);
+    box-shadow: none;
   }
 
   .noor-card-coral {
-    background: linear-gradient(135deg, rgba(255, 127, 127, 0.2), rgba(255, 127, 127, 0.06));
-    border: 2px solid rgba(255, 127, 127, 0.5);
-    box-shadow: 0 6px 0 0 rgba(196, 77, 77, 0.2), 0 14px 28px -10px rgba(255, 127, 127, 0.4);
+    background: var(--card);
+    border: 1px solid rgba(201, 59, 59, 0.28);
+    box-shadow: 0 4px 16px -8px rgba(120, 30, 30, 0.08);
   }
   .dark .noor-card-coral {
-    background: linear-gradient(135deg, rgba(255, 127, 127, 0.15), rgba(255, 127, 127, 0.04));
-    border-color: rgba(255, 127, 127, 0.3);
+    background: var(--card);
+    border-color: rgba(229, 105, 105, 0.22);
+    box-shadow: none;
   }
 
   .noor-card-green {
-    background: linear-gradient(135deg, rgba(124, 252, 0, 0.18), rgba(124, 252, 0, 0.05));
-    border: 2px solid rgba(124, 252, 0, 0.5);
-    box-shadow: 0 6px 0 0 rgba(92, 184, 0, 0.2), 0 14px 28px -10px rgba(124, 252, 0, 0.35);
+    background: var(--card);
+    border: 1px solid rgba(22, 128, 61, 0.28);
+    box-shadow: 0 4px 16px -8px rgba(16, 80, 40, 0.08);
   }
   .dark .noor-card-green {
-    background: linear-gradient(135deg, rgba(124, 252, 0, 0.12), rgba(124, 252, 0, 0.03));
-    border-color: rgba(124, 252, 0, 0.3);
+    background: var(--card);
+    border-color: rgba(127, 209, 127, 0.22);
+    box-shadow: none;
   }
 
   .noor-card-rainbow {
-    background:
-      linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 127, 127, 0.14) 40%, rgba(124, 252, 0, 0.14) 75%, rgba(135, 206, 235, 0.16));
-    border: 2px solid rgba(255, 215, 0, 0.4);
-    box-shadow: 0 6px 0 0 rgba(25, 25, 112, 0.12), 0 16px 30px -12px rgba(25, 25, 112, 0.3);
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: 0 6px 20px -10px rgba(33, 25, 12, 0.12);
   }
   .dark .noor-card-rainbow {
-    background:
-      linear-gradient(135deg, rgba(255, 215, 0, 0.13), rgba(255, 127, 127, 0.1) 40%, rgba(124, 252, 0, 0.1) 75%, rgba(135, 206, 235, 0.12));
-    border-color: rgba(255, 215, 0, 0.25);
+    background: var(--card);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
   }
 
   /* Gradient pill — for short text highlights / numbers */

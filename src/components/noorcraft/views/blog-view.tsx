@@ -109,7 +109,19 @@ export function BlogView() {
   useEffect(() => {
     fetch(`/api/blog${filter !== "all" ? `?category=${filter}` : ""}`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setPosts(d.posts); })
+      .then((d) => {
+        if (d.ok) {
+          const loaded: BlogPost[] = d.posts ?? [];
+          setPosts(loaded);
+          try {
+            const postId = new URLSearchParams(window.location.search).get("post");
+            if (postId) {
+              const found = loaded.find((p) => p.id === postId);
+              if (found) setSelectedPost(found);
+            }
+          } catch {}
+        }
+      })
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -159,7 +171,7 @@ export function BlogView() {
 
   function handleShare() {
     if (!selectedPost) return;
-    const url = `${window.location.origin}/?blog=${selectedPost.id}`;
+    const url = `${window.location.origin}/?view=blog&post=${selectedPost.id}`;
     navigator.clipboard?.writeText(url).then(() => {
       toast({ title: "لینک کپی شد ✓", description: "لینک پست در کلیپ‌بورد ذخیره شد" });
     }).catch(() => {

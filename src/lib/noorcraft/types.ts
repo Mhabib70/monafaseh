@@ -107,6 +107,8 @@ export interface SessionCard {
   hostId: string;
   hostName: string;
   hostGender?: string | null;
+  hostProvince?: string | null;
+  hostCity?: string | null;
   recitationType: RecitationType;
   reciterNationality: ReciterNationality;
   favoriteReciter: string;

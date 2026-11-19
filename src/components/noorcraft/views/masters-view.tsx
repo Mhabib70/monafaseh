@@ -1,10 +1,5 @@
 "use client";
 
-// ============================================================
-// استادان آنلاین — لیست قاریان تأییدشده (تیک آبی)
-// آنلاین‌ها کادر آبی دارند و قابل رزرو هستند (۱ امتیاز = ۱ جلسه)
-// ============================================================
-
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -53,16 +48,23 @@ export function MastersView() {
   const [masters, setMasters] = useState<Master[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [rankFilter, setRankFilter] = useState<string>("all");
 
   useEffect(() => {
     fetch("/api/masters", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setMasters(d.masters ?? []); })
+      .then((d) => {
+        if (d.ok) setMasters(d.masters ?? []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   async function book(master: Master) {
+    if (!user) {
+      setView("auth");
+      return;
+    }
     setBookingId(master.id);
     try {
       const res = await fetch("/api/masters/book", {
@@ -72,17 +74,16 @@ export function MastersView() {
       });
       const d = await res.json();
       if (!d.ok) {
-        const err: any = new Error(d.error);
+        const err = new Error(d.error) as Error & { neededCredits?: number };
         if (d.neededCredits) err.neededCredits = d.neededCredits;
         throw err;
       }
 
       toast({
-        title: "جلسه خصوصی رزرو شد 🎉",
+        title: "جلسه خصوصی رزرو شد",
         description: `${(master.privateSessionPrice ?? 1).toLocaleString("fa-IR")} امتیاز کسر شد. در حال انتقال به محفل خصوصی...`,
       });
 
-      // انتقال به محفل خصوصی
       const detail = await fetch(`/api/sessions/${d.booking.sessionId}`, {
         cache: "no-store",
       });
@@ -93,22 +94,21 @@ export function MastersView() {
       } else {
         setView("sessions");
       }
-    } catch (e: any) {
-      // اگر مشکل «موجودی ناکافی» باشد، کاربر را با تعداد لازم استاد به
-      // صفحه خرید می‌بریم تا دقیقاً همان تعداد امتیاز را بخرد.
-      if (e?.neededCredits) {
+    } catch (e: unknown) {
+      const err = e as Error & { neededCredits?: number };
+      if (err?.neededCredits) {
         try {
-          sessionStorage.setItem("monafaseh_buy_credits", String(e.neededCredits));
+          sessionStorage.setItem("monafaseh_buy_credits", String(err.neededCredits));
         } catch {}
         toast({
           title: "امتیاز کافی ندارید",
-          description: `${master.fullName} برای هر جلسه ${e.neededCredits.toLocaleString("fa-IR")} امتیاز می‌گیرد — به صفحه خرید می‌روید تا همان تعداد را بخرید.`,
+          description: `${master.fullName} برای هر جلسه ${err.neededCredits.toLocaleString("fa-IR")} امتیاز می‌گیرد — به صفحه خرید منتقل می‌شوید.`,
         });
         setView("buy-credits");
       } else {
         toast({
           title: "رزرو ناموفق",
-          description: e.message ?? "لطفاً دوباره تلاش کنید",
+          description: err?.message ?? "لطفاً دوباره تلاش کنید",
           variant: "destructive",
         });
       }
@@ -117,7 +117,6 @@ export function MastersView() {
     }
   }
 
-  const [rankFilter, setRankFilter] = useState<string>("all");
   const ranked = masters.filter(
     (m) => rankFilter === "all" || (rankFilter === "none" ? !m.qariRank : m.qariRank === rankFilter),
   );
@@ -125,33 +124,36 @@ export function MastersView() {
   const offline = ranked.filter((m) => !m.online);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
       <button
-        onClick={() => setView("dashboard")}
-        className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+        onClick={() => setView(user ? "dashboard" : "landing")}
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowRight className="h-4 w-4" />
-        بازگشت به داشبورد
+        {user ? "بازگشت به داشبورد" : "بازگشت به صفحه اصلی"}
       </button>
 
-      <div className="mb-6 flex items-center gap-3">
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-noor-sky/20">
-          <UserCheck className="h-8 w-8 text-noor-sky" />
+      <div className="mb-6 flex items-center gap-3.5">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-sky-500/12 text-sky-600 dark:text-sky-400">
+          <UserCheck className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="font-display text-2xl font-bold">قاریان آنلاین</h1>
+          <h1 className="font-display text-2xl font-extrabold text-foreground">
+            قاریان و استادان تأییدشده
+          </h1>
           <p className="text-sm text-muted-foreground">
-            قاریان تأییدشده‌ی منافسه — قیمت هر جلسه را خود استاد تعیین می‌کند
+            رزرو جلسه خصوصی تلاوت و رفع اشکال با قاریان احراز هویت‌شده منافسه
           </p>
         </div>
       </div>
 
-      {/* فیلتر رنک قاریان */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         <button
           onClick={() => setRankFilter("all")}
-          className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-            rankFilter === "all" ? "bg-noor-navy text-white" : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
+          className={`whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+            rankFilter === "all"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card text-foreground hover:bg-secondary"
           }`}
         >
           همه
@@ -160,10 +162,16 @@ export function MastersView() {
           <button
             key={r.id}
             onClick={() => setRankFilter(r.id)}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-              rankFilter === r.id ? "text-white" : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              rankFilter === r.id
+                ? "text-white"
+                : "border-border bg-card text-foreground hover:bg-secondary"
             }`}
-            style={rankFilter === r.id ? { background: r.color } : { borderColor: r.color, border: `1.5px solid ${r.color}55` }}
+            style={
+              rankFilter === r.id
+                ? { background: r.color, borderColor: r.color }
+                : undefined
+            }
           >
             <span className="h-2 w-2 rounded-full" style={{ background: r.color }} />
             {r.label}
@@ -171,8 +179,10 @@ export function MastersView() {
         ))}
         <button
           onClick={() => setRankFilter("none")}
-          className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-            rankFilter === "none" ? "bg-noor-navy text-white" : "bg-white/70 text-noor-navy hover:bg-white dark:bg-white/10 dark:text-white"
+          className={`whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+            rankFilter === "none"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card text-foreground hover:bg-secondary"
           }`}
         >
           تأییدشده
@@ -180,18 +190,20 @@ export function MastersView() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-noor-yellow" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((idx) => (
+            <div key={idx} className="h-44 animate-pulse rounded-2xl border border-border bg-card p-5" />
+          ))}
         </div>
       ) : masters.length === 0 ? (
         <NoorCard className="p-8 text-center">
           <VerifiedBadge size={40} />
           <p className="mt-3 text-sm text-muted-foreground">
-            هنوز استاد تأییدشده‌ای نداریم — شما هم می‌توانید درخواست تیک آبی بدهید!
+            هنوز استاد تأییدشده‌ای ثبت نشده است — شما هم می‌توانید درخواست تیک آبی بدهید.
           </p>
         </NoorCard>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {online.map((m, i) => (
             <MasterCard
               key={m.id}
@@ -207,11 +219,20 @@ export function MastersView() {
           ))}
           {offline.length > 0 && (
             <>
-              <h2 className="mt-6 font-display text-lg font-bold text-muted-foreground sm:col-span-2">
+              <h2 className="mt-6 font-display text-base font-bold text-muted-foreground sm:col-span-2">
                 آفلاین — پس از آنلاین شدن قابل رزرو هستند
               </h2>
               {offline.map((m, i) => (
-                <MasterCard key={m.id} master={m} index={i} disabled />
+                <MasterCard
+                  key={m.id}
+                  master={m}
+                  index={i}
+                  disabled
+                  onOpen={() => {
+                    setProfileUserId(m.id);
+                    setView("profile");
+                  }}
+                />
               ))}
             </>
           )}
@@ -236,15 +257,21 @@ function MasterCard({
   onOpen?: () => void;
   disabled?: boolean;
 }) {
+  const rankDef = master.qariRank ? qariRankDef(master.qariRank) : null;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: Math.min(index * 0.04, 0.25) }}
     >
-      <NoorCard className={`flex h-full flex-col p-5 ${disabled ? "opacity-60" : ""}`}>
+      <NoorCard className={`flex h-full flex-col ${disabled ? "opacity-65" : ""}`}>
         <div className="flex items-start gap-3">
-          <button onClick={onOpen} className="relative shrink-0 transition hover:scale-105" title="مشاهده پروفایل">
+          <button
+            onClick={onOpen}
+            className="relative shrink-0 transition-transform hover:scale-105"
+            title="مشاهده پروفایل"
+          >
             <NoorAvatar
               name={master.fullName}
               color={master.avatarColor}
@@ -255,12 +282,12 @@ function MasterCard({
               rank={master.qariRank}
             />
             <span
-              className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ring-2 ring-card ${
-                master.online ? "bg-noor-green animate-pulse" : "bg-muted-foreground"
+              className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-card ${
+                master.online ? "bg-emerald-500" : "bg-muted-foreground"
               }`}
             />
           </button>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <VerifiedName
               name={master.fullName}
               verified
@@ -269,34 +296,35 @@ function MasterCard({
               onClick={onOpen}
               className="font-display font-bold"
             />
-            {master.qariRank && qariRankDef(master.qariRank) && (
+            {rankDef && (
               <span
-                className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                className="mt-1 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold"
                 style={{
-                  background: `${qariRankDef(master.qariRank)!.color}1e`,
-                  color: qariRankDef(master.qariRank)!.color,
-                  border: `1px solid ${qariRankDef(master.qariRank)!.color}66`,
+                  background: `${rankDef.color}1a`,
+                  color: rankDef.color,
                 }}
               >
                 {qariBadgeLabel(master.qariRank)}
               </span>
             )}
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               {master.city && (
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   {master.city}
                 </span>
               )}
               {master.recitationType && (
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <Mic2 className="h-3 w-3" />
                   {master.recitationType}
                 </span>
               )}
               <span
-                className={`flex items-center gap-1 font-bold ${
-                  master.online ? "text-noor-green" : "text-muted-foreground"
+                className={`inline-flex items-center gap-1 font-semibold ${
+                  master.online
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-muted-foreground"
                 }`}
               >
                 <Radio className="h-3 w-3" />
@@ -308,14 +336,14 @@ function MasterCard({
 
         {master.favoriteReciter && (
           <p className="mt-3 text-xs text-muted-foreground">
-            قاری اقتدا: <span className="font-bold text-foreground">{master.favoriteReciter}</span>
+            قاری اقتدا: <span className="font-semibold text-foreground">{master.favoriteReciter}</span>
           </p>
         )}
 
         {!disabled && onBook && (
           <NoorButton
             variant="yellow"
-            className="mt-4 w-full"
+            className="mt-4 w-full tabular-nums"
             onClick={onBook}
             disabled={booking}
             leftIcon={
@@ -326,11 +354,13 @@ function MasterCard({
               )
             }
           >
-            {booking ? "در حال رزرو..." : `جلسه خصوصی — ${(master.privateSessionPrice ?? 1).toLocaleString("fa-IR")} امتیاز`}
+            {booking
+              ? "در حال رزرو..."
+              : `رزرو جلسه خصوصی · ${(master.privateSessionPrice ?? 1).toLocaleString("fa-IR")} امتیاز`}
           </NoorButton>
         )}
         {disabled && (
-          <div className="mt-4 flex items-center justify-center gap-1.5 rounded-full bg-muted/50 py-2 text-xs text-muted-foreground">
+          <div className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary/40 py-2 text-xs tabular-nums text-muted-foreground">
             <Coins className="h-3.5 w-3.5" />
             {(master.privateSessionPrice ?? 1).toLocaleString("fa-IR")} امتیاز — پس از آنلاین شدن قابل رزرو
           </div>

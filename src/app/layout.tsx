@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/noorcraft/theme-provider";
 
-// Body font — clean, modern, highly legible Persian sans-serif
 const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
   variable: "--font-vazirmatn",
@@ -18,23 +17,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = (
+  process.env.SITE_URL ||
+  process.env.NEXTAUTH_URL ||
+  process.env.APP_URL ||
+  "https://monafaseh.ir"
+).replace(/\/+$/, "");
+
 export const metadata: Metadata = {
-  title: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
+    template: "%s | منافسه",
+  },
   description:
-    "منافسه پلتفرم آنلاین رقابت تلاوت قرآن با تصویر و صدای زنده، نمایش همزمان قرآن، تشویق‌های سنتی و امتیازدهی تخصصی. در محفلی آنلاین شرکت کنید، تلاوت کنید و رقابت کنید.",
+    "منافسه پلتفرم تخصصی برگزاری محافل زنده تلاوت قرآن، چالش رقابت قاریان، رزرو جلسه خصوصی با استادان احراز هویت‌شده، نمایش همزمان مصحف و امتیازدهی تخصصی.",
   keywords: [
     "منافسه",
     "Monafaseh",
     "تلاوت قرآن",
     "رقابت قرآنی",
-    "منافسه قرآنی",
-    "جیتسی",
-    "محفل قرآنی",
-    "Jitsi",
-    "تلاوت آنلاین",
-    "قرآن زنده",
+    "محفل قرآنی آنلاین",
+    "آموزش تجوید و صوت و لحن",
+    "قاریان ممتاز",
+    "تحقیق و ترتیل",
   ],
-  authors: [{ name: "Monafaseh Team" }],
+  authors: [{ name: "منافسه" }],
+  alternates: {
+    canonical: "/",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -50,22 +61,68 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
-    description: "محفلی برای رقابت تلاوت، تشویق و ارزیابی قرآنی",
+    description:
+      "گردهمایی زنده قاریان قرآن، رقابت دوستانه، تحمید جمعی و جلسات خصوصی با استادان تلاوت",
     type: "website",
+    url: "/",
+    siteName: "منافسه",
+    locale: "fa_IR",
+    images: [
+      {
+        url: "/images/editorial/hero-recitation.jpg",
+        width: 1280,
+        height: 720,
+        alt: "منافسه — پلتفرم محافل زنده تلاوت قرآن کریم",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
+    description:
+      "پلتفرم آنلاین محافل تلاوت قرآن کریم با حضور قاریان ممتاز و رقابت دوستانه",
+    images: ["/images/editorial/hero-recitation.jpg"],
   },
 };
 
-// Mobile viewport — required for proper WebRTC camera behavior on iOS/Android.
-// `viewportFit: "cover"` lets the layout use the full screen including notches.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#fdf9ef" },
     { media: "(prefers-color-scheme: dark)", color: "#08080a" },
+  ],
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "منافسه",
+      alternateName: "Monafaseh",
+      url: siteUrl,
+      logo: `${siteUrl}/icons/icon-512-v2.png`,
+    },
+    {
+      "@type": "WebApplication",
+      "@id": `${siteUrl}/#webapp`,
+      name: "منافسه — محفل زنده تلاوت و رقابت قرآنی",
+      url: siteUrl,
+      applicationCategory: "EducationalApplication",
+      operatingSystem: "All",
+      inLanguage: "fa-IR",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "IRR",
+      },
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
   ],
 };
 
@@ -79,6 +136,10 @@ export default function RootLayout({
       <body
         className={`${vazirmatn.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

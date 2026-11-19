@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  verify:
+    name: Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: file:/tmp/monafaseh-ci.db
+
+      - name: TypeScript typecheck
+        run: ./node_modules/.bin/tsc --noEmit
+
+      - name: ESLint check
+        run: npm run lint
+
+      - name: Production Next.js build
+        run: npm run build
+        env:
+          DATABASE_URL: file:/tmp/monafaseh-ci.db
+          NEXTAUTH_SECRET: ci-build-placeholder-secret
+          NEXTAUTH_URL: http://localhost:3000
+          SITE_URL: http://localhost:3000
+          NEXT_TELEMETRY_DISABLED: "1"

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminView } from "@/components/noorcraft/views/admin-view";
 import { NoorButton } from "@/components/noorcraft/noor-button";
+import { NoorBadge } from "@/components/noorcraft/noor-badge";
 import { Loader2, Shield, Lock } from "lucide-react";
 
 export default function AdminPage() {
@@ -171,7 +172,7 @@ export default function AdminPage() {
             <NoorBadge variant="coral" icon={<Shield className="h-3 w-3" />}>
               پنل مدیریتی
             </NoorBadge>
-            <h1 className="mt-3 text-3xl font-extrabold text-white">
+            <h1 className="mt-3 text-3xl font-extrabold text-foreground">
               مدیریت منافسه
             </h1>
           </div>
@@ -185,13 +186,5 @@ export default function AdminPage() {
         <AdminView />
       </div>
     </div>
-  );
-}
-
-function NoorBadge({ children, variant }: { children: React.ReactNode; variant: "coral" }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-noor-coral/20 px-3 py-1 text-xs font-bold text-noor-coral">
-      {children}
-    </span>
   );
 }

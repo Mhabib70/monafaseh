@@ -4,7 +4,12 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,18 +23,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate type
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const ext = MIME_TO_EXT[file.type];
+    if (!ext) {
       return NextResponse.json(
         {
           ok: false,
-          error: `نوع فایل مجاز نیست. فرمت‌های مجاز: ${ALLOWED_TYPES.join(", ")}`,
+          error: "نوع فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WebP, GIF",
         },
         { status: 400 },
       );
     }
 
-    // Validate size
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { ok: false, error: "حجم فایل نباید بیشتر از ۵ مگابایت باشد" },
@@ -37,30 +41,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure directory exists
     const uploadDir = join(process.cwd(), "public", "uploads", "avatars");
     try {
       mkdirSync(uploadDir, { recursive: true });
-    } catch {
-      // Directory already exists
-    }
+    } catch {}
 
-    // Generate unique filename
-    const ext = file.name.split(".").pop() || "jpg";
     const filename = `${randomUUID()}.${ext}`;
     const filepath = join(uploadDir, filename);
 
-    // Convert file to buffer and save
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     writeFileSync(filepath, buffer);
 
-    // Return public URL
-    const url = `/uploads/avatars/${filename}`;
-
     return NextResponse.json({
       ok: true,
-      url,
+      url: `/uploads/avatars/${filename}`,
       filename,
       size: file.size,
     });
