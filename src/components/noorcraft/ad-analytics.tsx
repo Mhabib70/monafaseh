@@ -766,39 +766,50 @@ function PieChart({ data, total }: { data: PerSlotStat[]; total: number }) {
   const cy = 100;
   const innerRadius = 50; // donut
 
-  let cumulativeAngle = -90; // start from top
+  const { slices } = data.reduce<{
+    angleOffset: number;
+    slices: Array<{
+      path: string;
+      color: string;
+      percentage: number;
+      label: string;
+      impressions: number;
+      clicks: number;
+    }>;
+  }>(
+    (acc, d, i) => {
+      const percentage = (d.impressions / total) * 100;
+      const angle = (percentage / 100) * 360;
+      const startAngle = acc.angleOffset;
+      const endAngle = startAngle + angle;
 
-  const slices = data.map((d, i) => {
-    const percentage = (d.impressions / total) * 100;
-    const angle = (percentage / 100) * 360;
-    const startAngle = cumulativeAngle;
-    const endAngle = cumulativeAngle + angle;
-    cumulativeAngle = endAngle;
+      const startRad = (startAngle * Math.PI) / 180;
+      const endRad = (endAngle * Math.PI) / 180;
+      const x1 = cx + radius * Math.cos(startRad);
+      const y1 = cy + radius * Math.sin(startRad);
+      const x2 = cx + radius * Math.cos(endRad);
+      const y2 = cy + radius * Math.sin(endRad);
+      const x1i = cx + innerRadius * Math.cos(startRad);
+      const y1i = cy + innerRadius * Math.sin(startRad);
+      const x2i = cx + innerRadius * Math.cos(endRad);
+      const y2i = cy + innerRadius * Math.sin(endRad);
+      const largeArc = angle > 180 ? 1 : 0;
 
-    // SVG arc path
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = (endAngle * Math.PI) / 180;
-    const x1 = cx + radius * Math.cos(startRad);
-    const y1 = cy + radius * Math.sin(startRad);
-    const x2 = cx + radius * Math.cos(endRad);
-    const y2 = cy + radius * Math.sin(endRad);
-    const x1i = cx + innerRadius * Math.cos(startRad);
-    const y1i = cy + innerRadius * Math.sin(startRad);
-    const x2i = cx + innerRadius * Math.cos(endRad);
-    const y2i = cy + innerRadius * Math.sin(endRad);
-    const largeArc = angle > 180 ? 1 : 0;
+      const path = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${x2i} ${y2i} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1i} ${y1i} Z`;
 
-    const path = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${x2i} ${y2i} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1i} ${y1i} Z`;
-
-    return {
-      path,
-      color: SLOT_COLORS[i % SLOT_COLORS.length],
-      percentage,
-      label: SLOT_LABELS[d.slot] || d.slot,
-      impressions: d.impressions,
-      clicks: d.clicks,
-    };
-  });
+      acc.slices.push({
+        path,
+        color: SLOT_COLORS[i % SLOT_COLORS.length],
+        percentage,
+        label: SLOT_LABELS[d.slot] || d.slot,
+        impressions: d.impressions,
+        clicks: d.clicks,
+      });
+      acc.angleOffset = endAngle;
+      return acc;
+    },
+    { angleOffset: -90, slices: [] },
+  );
 
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">

@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone", // برای Docker — تصویر سبک‌تر
-  typescript: {
-    ignoreBuildErrors: true,
+  output: "standalone",
+  reactStrictMode: true,
+  images: {
+    unoptimized: true,
   },
-  reactStrictMode: false,
-  // Allow embedding Jitsi Meet iframe and loading its resources
   async headers() {
     return [
       {
@@ -16,11 +15,18 @@ const nextConfig: NextConfig = {
             key: "X-Frame-Options",
             value: "ALLOWALL",
           },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
         ],
       },
     ];
   },
-  // Ensure env vars are available
   env: {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,

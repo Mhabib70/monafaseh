@@ -47,7 +47,7 @@ export function OnlineUsersBar({ maxVisible = 8, compact = false }: OnlineUsersB
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("/api/admin/online")
+    fetch("/api/users/online", { cache: "no-store" })
       .then((r) => { if (!r.ok) throw new Error("skip"); return r.json(); })
       .then((d) => { if (d.ok) setOnlineUsers(d.online || []); })
       .catch(() => {});

@@ -220,9 +220,11 @@ export function JitsiMeet({
   }, [roomName, displayName, avatarUrl]);
 
   useEffect(() => {
-    const cleanup = initJitsi();
+    const cleanupPromise = initJitsi();
     return () => {
-      if (typeof cleanup === "function") cleanup();
+      cleanupPromise.then((fn) => {
+        if (typeof fn === "function") fn();
+      });
     };
   }, [initJitsi]);
 

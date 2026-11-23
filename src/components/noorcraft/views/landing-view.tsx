@@ -3,393 +3,407 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Sparkles,
   Mic,
   Users,
   Trophy,
   Heart,
-  Moon,
   ArrowLeft,
-  Zap,
-  Shield,
   Video,
   PlayCircle,
-  Star,
-  Crown,
   Flame,
   BookOpen,
-  Music,
-  CheckCircle2,
   MessageCircle,
+  Sparkles,
+  UserCheck,
 } from "lucide-react";
 import { NoorButton } from "../noor-button";
 import { AdBanner } from "../ad-banner";
 import { useNoorStore } from "@/store/noor-store";
 
+interface LiveStats {
+  totalUsers: number;
+  activeSessions: number;
+  totalRecitations: number;
+  totalTahmeeds: number;
+}
+
+function EditorialMedia({
+  src,
+  alt,
+  className = "",
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div
+        className={`flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-900 via-stone-800 to-amber-950/60 p-6 text-center text-stone-300 ${className}`}
+      >
+        <Mic className="h-10 w-10 opacity-40" />
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      className={`h-full w-full object-cover ${className}`}
+    />
+  );
+}
+
 export function LandingView() {
   const setView = useNoorStore((s) => s.setView);
   const user = useNoorStore((s) => s.user);
-
-  // Fetch real stats from API
-  const [realStats, setRealStats] = useState<{
-    totalUsers: number;
-    activeSessions: number;
-    totalRecitations: number;
-    totalTahmeeds: number;
-  } | null>(null);
+  const [realStats, setRealStats] = useState<LiveStats | null>(null);
 
   useEffect(() => {
-    fetch("/api/stats")
+    let cancelled = false;
+    fetch("/api/stats", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.ok) {
-          setRealStats(data.stats);
-        }
+        if (!cancelled && data.ok) setRealStats(data.stats);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  function formatNum(n: number): string {
-    if (n === 0) return "۰";
-    return n.toLocaleString("fa-IR");
-  }
+  const stats = [
+    {
+      value: realStats ? `+${realStats.totalUsers.toLocaleString("fa-IR")}` : null,
+      label: "قاری عضو",
+      icon: <Users className="h-4 w-4 text-primary" />,
+    },
+    {
+      value: realStats ? realStats.activeSessions.toLocaleString("fa-IR") : null,
+      label: "محفل زنده",
+      icon: <PlayCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />,
+    },
+    {
+      value: realStats ? `+${realStats.totalRecitations.toLocaleString("fa-IR")}` : null,
+      label: "تلاوت ثبت‌شده",
+      icon: <Mic className="h-4 w-4 text-primary" />,
+    },
+    {
+      value: realStats ? `+${realStats.totalTahmeeds.toLocaleString("fa-IR")}` : null,
+      label: "تحمید و تشویق",
+      icon: <Heart className="h-4 w-4 text-rose-600 dark:text-rose-400" />,
+    },
+  ];
 
-  const stats = realStats
-    ? [
-        { value: `+${formatNum(realStats.totalUsers)}`, label: "قاری فعال", icon: <Users className="h-5 w-5" /> },
-        { value: formatNum(realStats.activeSessions), label: "محفل زنده", icon: <PlayCircle className="h-5 w-5" /> },
-        { value: `+${formatNum(realStats.totalRecitations)}`, label: "تلاوت ثبت‌شده", icon: <Mic className="h-5 w-5" /> },
-        { value: `+${formatNum(realStats.totalTahmeeds)}`, label: "تشویق دریافتی", icon: <Heart className="h-5 w-5" /> },
-      ]
-    : [
-        { value: "...", label: "قاری فعال", icon: <Users className="h-5 w-5" /> },
-        { value: "...", label: "محفل زنده", icon: <PlayCircle className="h-5 w-5" /> },
-        { value: "...", label: "تلاوت ثبت‌شده", icon: <Mic className="h-5 w-5" /> },
-        { value: "...", label: "تشویق دریافتی", icon: <Heart className="h-5 w-5" /> },
-      ];
+  const pillars = [
+    {
+      title: "محافل تلاوت زنده",
+      desc: "برگزاری محافل صوتی و تصویری با نوبت‌دهی خودکار، مدیریت میزبان و تفکیک محافل آقایان و بانوان.",
+      cta: "مشاهده محافل",
+      image: "/images/editorial/live-gathering.jpg",
+      alt: "محفل زنده تلاوت قرآن کریم",
+      action: () => setView("sessions"),
+    },
+    {
+      title: "چالش منافسه دو‌نفره",
+      desc: "یافتن هم‌تلاوت هم‌سطح بر اساس سبک تحقیق یا ترتیل و رقابت سازنده در فضایی صمیمی.",
+      cta: user ? "شروع چالش" : "ورود و شرکت",
+      image: "/images/editorial/quran-challenge.jpg",
+      alt: "مصحف شریف در حال تلاوت و رقابت قرآنی",
+      action: () => setView(user ? "challenge" : "auth"),
+    },
+    {
+      title: "جلسه خصوصی با قاریان ممتاز",
+      desc: "رزرو نوبت مستقیم با استادان احراز هویت‌شده برای رفع اشکال تجوید، صوت و لحن.",
+      cta: "فهرست قاریان",
+      image: "/images/editorial/master-reciters.jpg",
+      alt: "قاری و مدرس در حال تلاوت با میکروفون استودیویی",
+      action: () => setView("masters"),
+    },
+  ];
+
+  const utilities = [
+    {
+      icon: <MessageCircle className="h-5 w-5 text-primary" />,
+      title: "تالار گفتگو",
+      desc: "ارتباط مستقیم با قاریان هم‌علاقه و ارسال دعوت‌نامه محفل",
+      action: () => setView(user ? "lounge" : "auth"),
+    },
+    {
+      icon: <BookOpen className="h-5 w-5 text-primary" />,
+      title: "مجله و یادداشت‌ها",
+      desc: "تجربه‌ها، نکات آموزشی صوت و لحن و گفت‌وگوهای قرآنی",
+      action: () => setView("blog"),
+    },
+    {
+      icon: <Trophy className="h-5 w-5 text-primary" />,
+      title: user ? "داشبورد و نشان‌ها" : "عضویت و امتیاز نور",
+      desc: user
+        ? "مدیریت محافل، پیگیری رتبه‌ها و موجودی امتیاز نور"
+        : "ساخت پروفایل قاری و ثبت تلاوت در کمتر از یک دقیقه",
+      action: () => setView(user ? "dashboard" : "auth"),
+    },
+  ];
 
   return (
     <div className="relative">
-      {/* === HERO — compact, fast-loading === */}
-      <section className="relative overflow-hidden bg-noor-hero">
+      <section className="relative overflow-hidden border-b border-border bg-noor-hero">
         <div className="noor-pattern" aria-hidden="true" />
-        <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-12 sm:px-6 sm:pt-16">
-          <div className="text-center">
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
+          <div className="grid items-stretch gap-8 lg:grid-cols-12 lg:gap-10">
             <motion.div
-              initial={{ scale: 0, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-              className="mx-auto mb-4 flex justify-center"
-            >
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-noor-coral/20 px-4 py-1.5 text-sm font-bold text-noor-coral">
-                <Flame className="h-4 w-4" />
-                فصل تازه‌ای از منافسه‌های قرآنی آغاز شد
-              </span>            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="text-4xl leading-tight text-noor-navy dark:text-white sm:text-5xl lg:text-6xl"
+              transition={{ duration: 0.45 }}
+              className="flex flex-col justify-center lg:col-span-7"
             >
-              محفلی برای{" "}
-              <span className="bg-gradient-to-l from-noor-coral via-noor-yellow to-noor-green bg-clip-text text-transparent">
-                منافسه قرآن کریم
-              </span>
-            </motion.h1>
+              <p className="text-xs font-semibold tracking-wide text-primary">
+                پلتفرم تخصصی محافل تلاوت و منافسه‌های قرآنی
+              </p>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg"
-            >
-              قاریان قرآن از سراسر جهان در محافل زنده جمع می‌شوند؛ به‌نوبت تلاوت
-              می‌کنند و یکدیگر را تشویق می‌کنند تا با کلام وحی لحظات خوشی را
-              تجربه کنند.
-            </motion.p>
+              <h1 className="mt-3 font-display text-3xl font-extrabold leading-[1.2] text-foreground sm:text-5xl lg:text-[3.25rem]">
+                محفلی زنده برای{" "}
+                <span className="text-primary">تلاوت و منافسه</span> قرآن کریم
+              </h1>
 
-            {/* === MAIN ACTION BUTTONS — direct access === */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-3"
-            >
-              {!user ? (
-                <>
-                  <NoorButton
-                    variant="yellow"
-                    size="xl"
-                    onClick={() => setView("auth")}
-                    leftIcon={<Sparkles className="h-5 w-5" />}
-                    className="animate-pulse-glow"
-                  >
-                    ورود / ثبت‌نام
-                  </NoorButton>
-                  <NoorButton
-                    variant="ghost"
-                    size="xl"
-                    onClick={() => setView("sessions")}
-                    rightIcon={<ArrowLeft className="h-5 w-5" />}
-                  >
-                    مشاهده‌ی محفل‌های زنده
-                  </NoorButton>
-                </>
-              ) : (
-                <>
-                  <NoorButton
-                    variant="yellow"
-                    size="xl"
-                    onClick={() => setView("create-session")}
-                    leftIcon={<Video className="h-5 w-5" />}
-                  >
-                    تشکیل محفل
-                  </NoorButton>
-                  <NoorButton
-                    variant="coral"
-                    size="xl"
-                    onClick={() => setView("challenge")}
-                    leftIcon={<Flame className="h-5 w-5" />}
-                    className="animate-pulse-glow"
-                  >
-                    چالش منافسه
-                  </NoorButton>
-                  <NoorButton
-                    variant="green"
-                    size="xl"
-                    onClick={() => setView("sessions")}
-                    leftIcon={<PlayCircle className="h-5 w-5" />}
-                  >
-                    محافل زنده
-                  </NoorButton>
-                </>
-              )}
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                قاریان از سراسر کشور و جهان در محافل صوتی و تصویری گرد هم
+                می‌آیند، به‌نوبت تلاوت می‌کنند و با دریافت تحمید و بازخورد
+                استادان، مسیر رشد قرآنی خود را می‌سازند.
+              </p>
+
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                {!user ? (
+                  <>
+                    <NoorButton
+                      variant="yellow"
+                      size="xl"
+                      onClick={() => setView("auth")}
+                      leftIcon={<Sparkles className="h-5 w-5" />}
+                    >
+                      شروع عضویت رایگان
+                    </NoorButton>
+                    <NoorButton
+                      variant="outline"
+                      size="xl"
+                      onClick={() => setView("sessions")}
+                      rightIcon={<ArrowLeft className="h-5 w-5" />}
+                    >
+                      مشاهده محافل زنده
+                    </NoorButton>
+                  </>
+                ) : (
+                  <>
+                    <NoorButton
+                      variant="yellow"
+                      size="xl"
+                      onClick={() => setView("create-session")}
+                      leftIcon={<Video className="h-5 w-5" />}
+                    >
+                      تشکیل محفل جدید
+                    </NoorButton>
+                    <NoorButton
+                      variant="coral"
+                      size="xl"
+                      onClick={() => setView("challenge")}
+                      leftIcon={<Flame className="h-5 w-5" />}
+                    >
+                      چالش رقابت
+                    </NoorButton>
+                    <NoorButton
+                      variant="outline"
+                      size="xl"
+                      onClick={() => setView("sessions")}
+                      rightIcon={<ArrowLeft className="h-5 w-5" />}
+                    >
+                      محافل زنده
+                    </NoorButton>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-muted-foreground">
+                <span>رایگان برای همه قاریان</span>
+                <span aria-hidden="true">·</span>
+                <span>پشتیبانی از تحقیق و ترتیل</span>
+                <span aria-hidden="true">·</span>
+                <span>محافل مجزا ویژه آقایان و بانوان</span>
+              </div>
             </motion.div>
 
-            {/* Trust indicators */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.45 }}
-              className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="lg:col-span-5"
             >
-              <span className="flex items-center gap-1.5 rounded-full px-3 py-1.5 noor-pill-green">
-                <Shield className="h-4 w-4 text-noor-green" />
-                <span className="text-noor-navy dark:text-white">کاملاً رایگان</span>
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full px-3 py-1.5 noor-pill-yellow">
-                <Zap className="h-4 w-4 text-noor-yellow" />
-                <span className="text-noor-navy dark:text-white">ورود در کمتر از یک دقیقه</span>
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full px-3 py-1.5 noor-pill-sky">
-                <Video className="h-4 w-4 text-noor-sky" />
-                <span className="text-noor-navy dark:text-white">صدا و تصویر بی‌واسطه</span>
-              </span>
+              <div className="relative h-64 overflow-hidden rounded-2xl border border-border bg-stone-900 sm:h-80 lg:h-full lg:min-h-[360px]">
+                <EditorialMedia
+                  src="/images/editorial/hero-recitation.jpg"
+                  alt="فضای نورانی محفل تلاوت قرآن کریم"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"
+                />
+                <div className="absolute inset-x-5 bottom-4 flex items-center justify-between text-xs text-white/90">
+                  <span className="font-medium">پخش زنده محافل تلاوت</span>
+                  <span className="tabular-nums font-semibold">
+                    {realStats
+                      ? `${realStats.activeSessions.toLocaleString("fa-IR")} محفل فعال`
+                      : "در حال اتصال..."}
+                  </span>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* === AD: Leaderboard — بین hero و آمار === */}
-      <section className="bg-noor-hero pb-2 pt-4">
+      <section className="border-b border-border/60 bg-background py-3">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <AdBanner slot="landing-top" size="leaderboard" />
         </div>
       </section>
 
-      {/* === STATS BAR — compact === */}
-      <section className="bg-card py-6">
+      <section className="border-b border-border bg-card py-7">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {stats.map((s, i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className={`flex items-center gap-3 rounded-2xl p-3 ${["noor-card-sky", "noor-card-yellow", "noor-card-coral", "noor-card-green"][i % 4]}`}
+                className="flex items-center gap-3.5 rounded-xl border border-border bg-background/60 px-4 py-3.5"
               >
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-noor-yellow/30 text-noor-navy dark:text-yellow-200">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10">
                   {s.icon}
                 </div>
-                <div>
-                  <div className="font-display text-2xl text-noor-navy dark:text-white">
-                    {s.value}
-                  </div>
+                <div className="min-w-0">
+                  {s.value !== null ? (
+                    <div className="font-display text-2xl font-extrabold tabular-nums text-foreground">
+                      {s.value}
+                    </div>
+                  ) : (
+                    <div className="my-1 h-7 w-16 animate-pulse rounded bg-muted" />
+                  )}
                   <div className="text-xs text-muted-foreground">{s.label}</div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* === AD: Medium Rectangle — بین آمار و دسترسی سریع === */}
-      <section className="bg-card py-4">
+      <section className="bg-background py-3">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <AdBanner slot="landing-mid-1" size="rectangle" />
         </div>
       </section>
 
-      {/* === QUICK ACCESS — all features in one place === */}
-      <section className="bg-noor-hero py-10">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-6 text-center"
-          >
-            <h2 className="font-display text-2xl text-noor-navy dark:text-white sm:text-3xl">
-              از اینجا شروع کنید
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              همه امکانات مورد نیاز شما در یک‌جا جمع شده است
-            </p>
-          </motion.div>
+      <section className="py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold text-primary">امکانات اصلی منافسه</p>
+              <h2 className="mt-1 font-display text-2xl font-extrabold text-foreground sm:text-3xl">
+                مسیر حضور در محافل قرآنی
+              </h2>
+            </div>
+            <button
+              onClick={() => setView("masters")}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:underline"
+            >
+              <UserCheck className="h-4 w-4" />
+              مشاهده قاریان تأییدشده
+            </button>
+          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: <Video className="h-6 w-6" />,
-                title: "تشکیل محفل",
-                desc: "محفلی بسازید و دوستانتان را به تلاوت دعوت کنید",
-                color: "#FFD700",
-                card: "noor-card-yellow",
-                action: () => setView(user ? "create-session" : "auth"),
-                cta: user ? "شروع" : "ورود",
-              },
-              {
-                icon: <Flame className="h-6 w-6" />,
-                title: "چالش منافسه",
-                desc: "به‌صورت آنلاین رقیب پیدا کنید و در فضایی دوستانه تلاوت کنید",
-                color: "#FF7F7F",
-                card: "noor-card-coral",
-                action: () => setView(user ? "challenge" : "auth"),
-                cta: user ? "شروع چالش" : "ورود",
-                highlight: true,
-              },
-              {
-                icon: <PlayCircle className="h-6 w-6" />,
-                title: "محافل زنده",
-                desc: "به محفلی که در حال تلاوت است بپیوندید",
-                color: "#7CFC00",
-                card: "noor-card-green",
-                action: () => setView("sessions"),
-                cta: "مشاهده",
-              },
-              {
-                icon: <MessageCircle className="h-6 w-6" />,
-                title: "تالار گفتگو",
-                desc: "با قاریان هم‌علاقه گفتگو کنید و آن‌ها را دعوت کنید",
-                color: "#87CEEB",
-                card: "noor-card-sky",
-                action: () => setView(user ? "lounge" : "auth"),
-                cta: user ? "ورود" : "ورود",
-              },
-              {
-                icon: <BookOpen className="h-6 w-6" />,
-                title: "بلاگ",
-                desc: "یادداشت‌ها و تجربه‌های کاربران منافسه",
-                color: "#FF7F7F",
-                card: "noor-card-coral",
-                action: () => setView("blog"),
-                cta: "مشاهده",
-              },
-              {
-                icon: <Trophy className="h-6 w-6" />,
-                title: "داشبورد",
-                desc: "امتیاز نور و نشان‌های خود را مشاهده کنید",
-                color: "#FFD700",
-                card: "noor-card-yellow",
-                action: () => setView(user ? "dashboard" : "auth"),
-                cta: user ? "مشاهده" : "ورود",
-              },
-              {
-                icon: <Sparkles className="h-6 w-6" />,
-                title: "ورود / ثبت‌نام",
-                desc: "در کمتر از یک دقیقه به جمع قاریان بپیوندید",
-                color: "#9d4edd",
-                card: "noor-card-rainbow",
-                action: () => setView("auth"),
-                cta: "شروع",
-                hideIfLoggedIn: true,
-              },
-            ]
-              .filter((f) => !f.hideIfLoggedIn || !user)
-              .map((f, i) => (
-                <motion.button
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ y: -4 }}
-                  onClick={f.action}
-                  className={`relative overflow-hidden rounded-3xl p-5 text-right transition ${f.card}`}
-                >
-                  {f.highlight && (
-                    <motion.div
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute left-3 top-3 rounded-full bg-noor-coral/30 px-2 py-0.5 text-[10px] font-bold text-noor-coral"
-                    >
-                      🔥 داغ
-                    </motion.div>
-                  )}
+          <div className="grid gap-5 md:grid-cols-3">
+            {pillars.map((item) => (
+              <button
+                key={item.title}
+                onClick={item.action}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-right transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-900">
+                  <EditorialMedia
+                    src={item.image}
+                    alt={item.alt}
+                    className="transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
                   <div
-                    className="clay-3d mb-3 grid h-12 w-12 place-items-center rounded-2xl text-noor-navy"
-                    style={{ background: f.color }}
-                  >
-                    {f.icon}
-                  </div>
-                  <h3 className="mb-1 text-lg font-bold text-noor-navy dark:text-white">
-                    {f.title}
-                  </h3>
-                  <p className="mb-3 text-xs text-muted-foreground">{f.desc}</p>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-noor-navy dark:text-white">
-                    {f.cta}
-                    <ArrowLeft className="h-3 w-3" />
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent"
+                  />
+                  <span className="absolute bottom-3 right-4 font-display text-lg font-bold text-white">
+                    {item.title}
                   </span>
-                </motion.button>
-              ))}
+                </div>
+                <div className="flex flex-1 flex-col justify-between p-5">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {item.desc}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary">
+                    {item.cta}
+                    <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {utilities.map((u) => (
+              <button
+                key={u.title}
+                onClick={u.action}
+                className="flex items-start gap-3.5 rounded-2xl border border-border bg-card p-5 text-right transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10">
+                  {u.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display text-base font-bold text-foreground">
+                    {u.title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {u.desc}
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* === AD: Inline — بین دسترسی سریع و آیه قرآن === */}
-      <section className="bg-noor-hero py-3">
+      <section className="py-2">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <AdBanner slot="landing-mid-2" size="inline" />
         </div>
       </section>
 
-      {/* === QURANIC QUOTE — minimal === */}
-      <section className="bg-card py-8">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative rounded-3xl p-6 text-center noor-card-rainbow sm:p-8"
-          >
-            <p className="font-quran text-2xl leading-loose text-noor-navy dark:text-white sm:text-3xl">
+      <section className="border-t border-border bg-card py-12">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <blockquote className="rounded-2xl border border-primary/25 bg-background/70 px-6 py-8 sm:px-10">
+            <p className="font-quran text-2xl leading-[2.2] text-foreground sm:text-3xl">
               وَقُرْآنًا فَرَقْنَاهُ لِتَقْرَأَهُ عَلَى النَّاسِ عَلَىٰ مُكْثٍ
             </p>
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground sm:text-base">
               «و قرآنی که بخش‌بندی کردیم تا آن را با آرامش بر مردم بخوانی»
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <footer className="mt-2 text-xs font-medium text-primary">
               سوره‌ی اسراء — آیه‌ی ۱۰۶
-            </p>
-          </motion.div>
+            </footer>
+          </blockquote>
         </div>
       </section>
 
-      {/* === AD: Billboard — پایین صفحه، بزرگ === */}
-      <section className="bg-noor-hero pb-10 pt-2">
+      <section className="bg-background pb-10 pt-4">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <AdBanner slot="landing-bottom" size="billboard" />
         </div>

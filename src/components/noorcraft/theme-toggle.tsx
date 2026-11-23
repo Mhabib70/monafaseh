@@ -1,27 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
+
+const emptySubscribe = () => () => {};
 
 // سوییچ تم «نور و شب» — جابه‌جایی بین تم تیره (شبِ محفل)
 // و تم روشن (کاغذ مصحف). در SSR تا تعیین تم، خالی رندر می‌شود.
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return <span className="h-9 w-9" aria-hidden="true" />;
+  if (!mounted) return <span className="h-9 w-9 shrink-0" aria-hidden="true" />;
 
   const isDark = resolvedTheme === "dark";
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative grid h-9 w-9 place-items-center rounded-full bg-white/70 text-noor-navy transition hover:bg-white dark:bg-white/10 dark:text-yellow-200 dark:hover:bg-white/20"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border bg-card text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={isDark ? "حالت روشن" : "حالت تیره"}
       title={isDark ? "حالت روشن (کاغذ مصحف)" : "حالت تیره (شبِ محفل)"}
     >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {isDark ? <Sun className="h-4 w-4 text-primary" /> : <Moon className="h-4 w-4 text-primary" />}
     </button>
   );
 }

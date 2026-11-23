@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "all";
     const recitationType = searchParams.get("recitationType") || "all";
 
-    const where: any = {
-      // فقط محافل پایان‌نیافته را برگردان — محافل بسته‌شده در لیست نمایش داده نمی‌شوند
+    const where: Record<string, unknown> = {
       status: { not: "ended" },
     };
     if (status !== "all") where.status = status;
@@ -57,6 +56,8 @@ export async function GET(request: NextRequest) {
             avatarColor: true,
             avatarUrl: true,
             gender: true,
+            province: true,
+            city: true,
           },
         },
         participants: true,
@@ -72,6 +73,8 @@ export async function GET(request: NextRequest) {
       hostAvatarColor: s.host.avatarColor,
       hostAvatarUrl: s.host.avatarUrl,
       hostGender: s.host.gender,
+      hostProvince: s.host.province,
+      hostCity: s.host.city,
       recitationType: s.recitationType,
       reciterNationality: s.reciterNationality,
       favoriteReciter: s.favoriteReciter,
