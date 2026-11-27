@@ -91,7 +91,8 @@ export function AppFrame() {
       const requestedSession = sp.get("session");
       const allowed: string[] = [
         "sessions", "challenge", "masters", "blog", "buy-credits",
-        "donate", "lounge", "auth", "dashboard",
+        "donate", "lounge", "auth", "dashboard", "create-session",
+        "verification", "bank-info", "feed", "profile",
       ];
 
       if (requestedView && allowed.includes(requestedView)) {

@@ -20,6 +20,7 @@ import {
 import { useNoorStore } from "@/store/noor-store";
 import { useToast } from "@/hooks/use-toast";
 import { InvitationBell } from "../invitation-bell";
+import { ThemeToggle } from "../theme-toggle";
 import { VerifiedName } from "../verified-badge";
 import {
   DCard, DButton, DBadge, DTile, DSectionHeader, DDash, DQuickRow, DAvatar,
@@ -272,8 +273,11 @@ export function HomeFeedView() {
               />
             </span>
           </button>
-          <div className="scale-110">
-            <InvitationBell />
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
+            <div className="scale-110">
+              <InvitationBell />
+            </div>
           </div>
         </div>
       </header>

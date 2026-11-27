@@ -425,9 +425,9 @@ export function ChallengeView() {
             initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-            className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br from-noor-coral to-noor-yellow shadow-chunky-coral"
+            className="mx-auto mb-4 grid h-24 w-24 rotate-[-4deg] place-items-center rounded-[1.8rem] border-2 border-ink bg-coral shadow-[0_4px_0_0_#1D1D1B]"
           >
-            <Flame className="h-12 w-12 text-noor-navy" />
+            <Flame className="h-12 w-12 text-white" />
           </motion.div>
           <NoorBadge variant="coral" icon={<Flame className="h-3 w-3" />}>
             چالش زنده رقابت
@@ -453,14 +453,14 @@ export function ChallengeView() {
             whileTap={{ scale: 0.95 }}
             onClick={handleAnnounce}
             disabled={announcing}
-            className="relative grid h-48 w-48 place-items-center rounded-full bg-gradient-to-br from-noor-yellow via-noor-coral to-noor-yellow shadow-chunky-yellow disabled:opacity-50"
+            className="relative grid h-48 w-48 place-items-center rounded-full border-2 border-ink bg-lime shadow-[0_6px_0_0_#1D1D1B] transition-transform active:translate-y-[5px] active:shadow-none disabled:opacity-50"
           >
             {announcing ? (
-              <Loader2 className="h-16 w-16 animate-spin text-noor-navy" />
+              <Loader2 className="h-16 w-16 animate-spin text-ink" />
             ) : (
               <>
-                <Flame className="h-16 w-16 text-noor-navy" />
-                <span className="mt-2 font-display text-xl text-noor-navy">
+                <Flame className="h-16 w-16 text-ink" />
+                <span className="mt-2 font-display text-xl text-ink">
                   اعلام آمادگی
                 </span>
               </>

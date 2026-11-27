@@ -11,17 +11,17 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  if (!mounted) return <span className="h-9 w-9" aria-hidden="true" />;
+  if (!mounted) return <span className="h-10 w-10" aria-hidden="true" />;
 
   const isDark = resolvedTheme === "dark";
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative grid h-9 w-9 place-items-center rounded-full bg-white/70 text-noor-navy transition hover:bg-white dark:bg-white/10 dark:text-yellow-200 dark:hover:bg-white/20"
+      className="relative grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-card text-ink shadow-[0_2px_0_0_#1D1D1B] transition active:translate-y-[2px] active:shadow-none dark:border-[#3A3A36] dark:bg-[#242421] dark:text-[#CDF138]"
       aria-label={isDark ? "حالت روشن" : "حالت تیره"}
       title={isDark ? "حالت روشن (کاغذ مصحف)" : "حالت تیره (شبِ محفل)"}
     >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {isDark ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
     </button>
   );
 }
