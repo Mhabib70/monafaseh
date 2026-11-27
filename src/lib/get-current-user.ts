@@ -1,10 +1,17 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("monafaseh-token")?.value;
+    let token = cookieStore.get("monafaseh-token")?.value;
+
+    // پشتیبان: هدر x-auth-token — برای وقتی مرورگر کوکی را در
+    // iframe پیش‌نمایش ذخیره/ارسال نمی‌کند
+    if (!token) {
+      const headerStore = await headers();
+      token = headerStore.get("x-auth-token") ?? undefined;
+    }
 
     if (!token) return null;
 

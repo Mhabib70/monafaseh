@@ -34,6 +34,7 @@ import { NoorBadge } from "../noor-badge";
 import { ParticleEffect } from "../particle-effect";
 import { AvatarUploader } from "../avatar-uploader";
 import { useNoorStore, makeStarterUser, calculateProfileCompletion } from "@/store/noor-store";
+import { saveAuthToken } from "@/lib/client-token";
 import {
   IRAN_PROVINCES,
   QURAN_INTERESTS,
@@ -137,6 +138,7 @@ export function AuthView() {
       });
       const d = await res.json();
       if (d.ok && d.linked && d.user) {
+        saveAuthToken(d.token);
         signIn(d.user);
         toast({ title: "ورود موفق ✓", description: "با حساب ایتا وارد شدید." });
         setView("dashboard");
@@ -397,6 +399,7 @@ export function AuthView() {
       }
 
       // Login is automatic — cookie is set by server
+      saveAuthToken(data.token);
       signIn(data.user);
       linkPendingEitaa();
       toast({
@@ -441,6 +444,7 @@ export function AuthView() {
       }
 
       signIn(data.user);
+      saveAuthToken(data.token);
       linkPendingEitaa();
       toast({
         title: "ورود موفق ✓",

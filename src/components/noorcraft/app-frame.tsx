@@ -11,6 +11,9 @@ import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { useNoorStore } from "@/store/noor-store";
 import type { ViewName } from "@/lib/noorcraft/types";
+// پل توکن احراز هویت — با همین import به‌صورت خودکار نصب می‌شود
+// تا درخواست‌های /api در حالت iframe پیش‌نمایش هدر x-auth-token بگیرند
+import { installAuthTokenBridge } from "@/lib/client-token";
 import { ErrorBoundary } from "@/components/noorcraft/error-boundary";
 import { LandingView } from "@/components/noorcraft/views/landing-view";
 import { AuthView } from "@/components/noorcraft/views/auth-view";
@@ -109,6 +112,8 @@ export function AppFrame() {
 
   // Auto-restore user from cookie on mount
   useEffect(() => {
+    // پل توکن — قبل از بازیابی نشست نصب شود (حالت iframe پیش‌نمایش)
+    installAuthTokenBridge();
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {

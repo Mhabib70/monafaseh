@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { sessionCookieOptions } from "@/lib/session-token";
 
 function generateToken(userId: string): string {
   const payload = `${userId}.${Date.now()}.${Math.random().toString(36).slice(2)}`;
@@ -187,15 +188,11 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       ok: true,
       user: fullUser,
+      // توکن در پاسخ برای پشتیبانی از حالت iframe پیش‌نمایش (بدون کوکی)
+      token,
     });
 
-    response.cookies.set("monafaseh-token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 30 * 24 * 60 * 60,
-    });
+    response.cookies.set("monafaseh-token", token, sessionCookieOptions(request));
 
     return response;
   } catch (error) {

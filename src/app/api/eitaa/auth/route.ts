@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateEitaaInitData } from "@/lib/eitaa/validate";
+import { sessionCookieOptions } from "@/lib/session-token";
 
 // ============================================================
 // POST /api/eitaa/auth — ورود یکپارچه با حساب ایتا
@@ -117,14 +118,10 @@ export async function POST(request: NextRequest) {
       ok: true,
       linked: true,
       user: fullUser,
+      // توکن در پاسخ برای پشتیبانی از حالت iframe پیش‌نمایش (بدون کوکی)
+      token,
     });
-    response.cookies.set("monafaseh-token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 30 * 24 * 60 * 60,
-    });
+    response.cookies.set("monafaseh-token", token, sessionCookieOptions(request));
     return response;
   } catch (error) {
     console.error("[Eitaa] auth error:", error);

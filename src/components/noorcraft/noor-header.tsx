@@ -6,6 +6,7 @@ import { Sparkles, Shield, Flame } from "lucide-react";
 import { NoorLogo } from "./noor-logo";
 import { NoorButton } from "./noor-button";
 import { useNoorStore } from "@/store/noor-store";
+import { clearAuthToken } from "@/lib/client-token";
 import { NoorAvatar } from "./noor-avatar";
 import { VerifiedName } from "./verified-badge";
 import { OnlineUsersBar } from "./online-users-bar";
@@ -158,6 +159,7 @@ export function NoorHeader() {
                   size="sm"
                   onClick={async () => {
                     await fetch("/api/auth/logout", { method: "POST" });
+                    clearAuthToken();
                     signOut();
                   }}
                   className="hidden sm:inline-flex"

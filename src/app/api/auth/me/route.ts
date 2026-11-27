@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { readSessionToken } from "@/lib/session-token";
 
-// GET /api/auth/me — دریافت کاربر فعلی از cookie
+// GET /api/auth/me — دریافت کاربر فعلی از cookie یا هدر پشتیبان (حالت iframe)
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get("monafaseh-token")?.value;
+    const token = readSessionToken(request);
 
     if (!token) {
       return NextResponse.json(
