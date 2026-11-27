@@ -1,18 +1,29 @@
 "use client";
 
 // ============================================================
-// HomeFeedView — صفحه خانه اپ (فید اجتماعی)
-// استوری قاریان آنلاین + محافل زنده «همین حالا» + تازه‌های بلاگ
+// HomeFeedView — صفحهٔ خانهٔ اپ منافسه (سبک Darahim)
+// ساختار دقیق مطابق کیت iOS کیف پول:
+//   ۱. هدر سلام + زنگ دعوت‌ها
+//   ۲. کارت موجودی نور (لیمویی) با جداکننده نقطه‌چین و زیرکارت‌ها
+//   ۳. ردیف چهار کاشی اکشن رنگی
+//   ۴. کارت «محفل بعدی» با استیکر شمارش معکوس و دکمه پیوستن
+//   ۵. ردیف قاریان آنلاین (Quick send)
+//   ۶. محافل زندهٔ همین حالا (کارت‌های پاستلی)
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, RefreshCw, Radio, BookOpen, Users } from "lucide-react";
-import { NoorAvatar } from "../noor-avatar";
-import { NoorButton } from "../noor-button";
-import { VerifiedName } from "../verified-badge";
+import {
+  Bell, Plus, Mic, Swords, Wallet, ArrowDownLeft, ArrowUpRight,
+  CalendarDays, Users, Radio, BookOpen, ChevronLeft, TrendingUp,
+} from "lucide-react";
 import { useNoorStore } from "@/store/noor-store";
 import { useToast } from "@/hooks/use-toast";
+import { InvitationBell } from "../invitation-bell";
+import { VerifiedName } from "../verified-badge";
+import {
+  DCard, DButton, DBadge, DTile, DSectionHeader, DDash, DQuickRow, DAvatar,
+} from "@/components/darahim/kit";
 
 interface OnlineUser {
   id: string;
@@ -29,8 +40,19 @@ interface LiveRoom {
   title?: string;
   name?: string;
   hostName?: string;
+  hostAvatarColor?: string;
   attendees?: number;
   capacity?: number;
+}
+
+interface UpcomingSession {
+  id: string;
+  title: string;
+  hostName: string;
+  startedAt: number;
+  attendees: number;
+  capacity: number;
+  status: string;
 }
 
 interface BlogPost {
@@ -42,22 +64,44 @@ interface BlogPost {
   views?: number;
 }
 
-function timeShort(ts: number) {
+const fa = (n: number) => n.toLocaleString("fa-IR");
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "صبح بخیر";
+  if (h >= 12 && h < 14) return "ظهر بخیر";
+  if (h >= 14 && h < 19) return "عصر بخیر";
+  return "شب بخیر";
+}
+
+/** چند روز مانده تا timestamp — به فارسی */
+function daysLeft(ts: number): string | null {
+  const diff = ts - Date.now();
+  if (diff <= 0) return null;
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  if (days >= 1) return `${fa(days)} روز مانده`;
+  if (hours >= 1) return `${fa(hours)} ساعت مانده`;
+  return "همین حالا";
+}
+
+function dateTile(ts: number) {
   const d = new Date(ts);
-  const now = new Date();
-  if (d.toDateString() === now.toDateString())
-    return d.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString("fa-IR", { month: "short", day: "numeric" });
+  const month = d.toLocaleDateString("fa-IR", { month: "short" });
+  const day = fa(d.getDate());
+  return { month, day };
 }
 
 export function HomeFeedView() {
   const user = useNoorStore((s) => s.user);
   const setView = useNoorStore((s) => s.setView);
+  const setProfileUserId = useNoorStore((s) => s.setProfileUserId);
   const setActiveSession = useNoorStore((s) => s.setActiveSession);
   const { toast } = useToast();
 
   const [online, setOnline] = useState<OnlineUser[]>([]);
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
+  const [upcoming, setUpcoming] = useState<UpcomingSession | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,27 +130,35 @@ export function HomeFeedView() {
     setPull(0);
   };
 
-  async function loadAll(showSpinner = false) {
+  const loadAll = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
     try {
-      const [u, r, b] = await Promise.all([
+      const [u, r, s, b] = await Promise.all([
         fetch("/api/users/online", { cache: "no-store" }).then((x) => x.json()).catch(() => null),
         fetch("/api/public/live-rooms", { cache: "no-store" }).then((x) => x.json()).catch(() => null),
+        fetch("/api/sessions", { cache: "no-store" }).then((x) => x.json()).catch(() => null),
         fetch("/api/blog", { cache: "no-store" }).then((x) => x.json()).catch(() => null),
       ]);
       if (u?.ok) setOnline(u.online ?? []);
       if (r?.ok) setRooms(r.liveRooms ?? []);
-      if (b?.ok) setPosts(b.posts ?? []);
+      if (s?.ok) {
+        const list: UpcomingSession[] = s.sessions ?? [];
+        const next = list
+          .filter((x) => x.status === "open" || x.status === "live")
+          .sort((a, b2) => (a.startedAt || 0) - (b2.startedAt || 0))[0];
+        setUpcoming(next ?? null);
+      }
+      if (b?.ok) setPosts((b.posts ?? []).slice(0, 3));
     } catch {}
     finally {
       setLoading(false);
       if (showSpinner) setRefreshing(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     loadAll(true);
-  }, []);
+  }, [loadAll]);
 
   async function joinRoom(id: string) {
     setJoining(id);
@@ -136,238 +188,385 @@ export function HomeFeedView() {
     }
   }
 
+  const openProfile = (id: string) => {
+    setProfileUserId(id);
+    setView("profile");
+  };
+
+  // ── اسکلتون بارگذاری ──
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] bg-noor-hero pb-24">
-        <div className="mx-auto max-w-2xl px-4 pt-8">
-          {/* اسکلتون استوری */}
-          <div className="flex gap-4 overflow-hidden px-1">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <div className="h-16 w-16 animate-pulse rounded-full bg-muted" />
-                <div className="h-2 w-10 animate-pulse rounded bg-muted" />
-              </div>
-            ))}
+      <div className="min-h-[calc(100vh-4rem)] bg-noor-hero px-4 pt-6 pb-28">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 animate-pulse rounded-2xl bg-muted" />
+            <div className="space-y-2">
+              <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+            </div>
           </div>
-          {/* اسکلتون پست‌ها */}
-          <div className="mt-8 space-y-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-3xl bg-card p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-28 animate-pulse rounded bg-muted" />
-                    <div className="h-2.5 w-20 animate-pulse rounded bg-muted" />
-                  </div>
-                </div>
-                <div className="mt-4 h-44 animate-pulse rounded-2xl bg-muted" />
-              </div>
-            ))}
-          </div>
+          <div className="h-11 w-11 animate-pulse rounded-full border-2 border-ink/20 bg-muted" />
         </div>
+        <div className="mt-6 h-52 animate-pulse rounded-3xl border-2 border-ink/10 bg-muted" />
+        <div className="mt-5 grid grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="aspect-square animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+        <div className="mt-5 h-24 animate-pulse rounded-3xl bg-muted" />
       </div>
     );
   }
 
   const firstName = user?.fullName?.split(" ")[0] ?? "قاری";
+  const credit = user?.creditBalance ?? 0;
+  const noorPoints = user?.stats?.noorPoints ?? 0;
+  const attended = user?.stats?.sessionsAttended ?? 0;
 
   return (
     <div
-      className="min-h-[calc(100vh-4rem)] bg-noor-hero pb-24"
+      className="min-h-[calc(100vh-4rem)] bg-noor-hero pb-28"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* نشانگر پول‌تو‌رفرش */}
-      <div
-        className="pointer-events-none fixed inset-x-0 top-16 z-30 grid place-items-center transition-[transform,opacity]"
-        style={{ transform: `translateY(${Math.min(pull, 70)}px)`, opacity: pull > 8 ? 1 : 0 }}
-      >
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-card shadow-md">
-          <Loader2
-            className={"h-4.5 w-4.5 text-noor-yellow" + (pull > 55 || refreshing ? " animate-spin" : "")}
-          />
-        </span>
-      </div>
-      <div className="mx-auto max-w-2xl px-4 pt-6">
-        {/* سلام */}
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground">
-              {new Date().toLocaleDateString("fa-IR", { weekday: "long", day: "numeric", month: "long" })}
-            </div>
-            <h1 className="mt-0.5 text-2xl font-black text-noor-navy dark:text-white">
-              سلام، {firstName} 👋
-            </h1>
-          </div>
-          <button
-            onClick={() => loadAll(true)}
-            className="grid h-10 w-10 place-items-center rounded-full bg-card text-muted-foreground shadow-sm transition hover:text-foreground"
-            aria-label="به‌روزرسانی"
+      {/* نوار پول‌تو‌رفرش */}
+      {pull > 0 && (
+        <div className="flex items-center justify-center pt-3 text-xs font-bold text-muted-foreground">
+          <span
+            className="inline-block transition-transform"
+            style={{ transform: `rotate(${pull * 3}deg)` }}
           >
-            <RefreshCw className={"h-4.5 w-4.5" + (refreshing ? " animate-spin" : "")} />
-          </button>
+            ↻
+          </span>{" "}
+          {pull > 55 ? "رها کنید تا به‌روزرسانی شود" : "برای به‌روزرسانی بکشید"}
         </div>
+      )}
 
-        {/* ── استوری قاریان آنلاین ── */}
-        <div className="mb-7">
-          <div className="mb-2.5 flex items-center justify-between px-1">
-            <span className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-              <Users className="h-3.5 w-3.5" /> قاریان آنلاین
-            </span>
-            <button onClick={() => setView("sessions")} className="text-[11px] font-bold text-noor-sky hover:underline">
-              مشاهده همه
-            </button>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <button onClick={() => setView("create-session")} className="flex w-14 shrink-0 flex-col items-center gap-1.5">
-              <span className="relative grid h-14 w-14 place-items-center rounded-full border-2 border-dashed border-noor-yellow/60 bg-noor-yellow/10 text-noor-navy dark:text-noor-yellow">
-                +<span className="sr-only">محفل جدید</span>
+      {/* ═══ ۱. هدر اپ: سلام + آواتار + زنگ ═══ */}
+      <header className="d-appbar px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => {
+              setProfileUserId(null);
+              setView("profile");
+            }}
+            className="flex items-center gap-3 text-right"
+            aria-label="پروفایل من"
+          >
+            <DAvatar
+              name={user?.fullName ?? ""}
+              avatarUrl={user?.avatarUrl}
+              avatarColor={user?.avatarColor}
+              gender={user?.gender}
+              size={48}
+            />
+            <span>
+              <span className="block text-[11px] font-medium text-muted-foreground leading-none">
+                {greeting()}
               </span>
-              <span className="text-[9.5px] font-bold text-muted-foreground">محفل من</span>
-            </button>
-            {online.slice(0, 12).map((u) => (
-              <button
-                key={u.id}
-                onClick={() => setView("sessions")}
-                className="flex w-14 shrink-0 flex-col items-center gap-1.5"
-                title={u.fullName}
-              >
-                <span
-                  className="rounded-full p-[2.5px]"
-                  style={{ background: "conic-gradient(from 200deg,#FFC400,#FF7F7F,#1D9BF0,#7CFC00,#FFC400)" }}
-                >
-                  <NoorAvatar
-                    name={u.fullName}
-                    color={u.avatarColor}
-                    avatarUrl={u.avatarUrl}
-                    gender={u.gender}
-                    size="lg"
-                  />
-                </span>
-                <span className="w-14 truncate text-center text-[9.5px] font-bold text-muted-foreground">
-                  {u.fullName.split(" ")[0]}
-                </span>
-              </button>
-            ))}
-            {online.length === 0 && (
-              <span className="py-3 text-xs text-muted-foreground">فعلاً کسی آنلاین نیست — اولین نفر باش 🌟</span>
-            )}
+              <VerifiedName
+                name={user?.fullName ?? "قاری"}
+                verified={user?.verificationStatus === "approved"}
+                className="mt-1 block font-rounded text-lg font-extrabold leading-none"
+              />
+            </span>
+          </button>
+          <div className="scale-110">
+            <InvitationBell />
           </div>
         </div>
+      </header>
 
-        {/* ── محافل زنده همین حالا ── */}
-        <section className="mb-8">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <h2 className="flex items-center gap-2 text-base font-black text-noor-navy dark:text-white">
-              <Radio className="h-4.5 w-4.5 text-noor-coral" />
-              همین حالا زنده
-            </h2>
-            <button onClick={() => setView("sessions")} className="text-[11px] font-bold text-noor-sky hover:underline">
-              همه محافل
-            </button>
-          </div>
-
-          {rooms.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-noor-yellow/40 bg-noor-yellow/5 p-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                فعلاً محفل زنده‌ای نیست — اولین محفل را تو بساز! 🎙
-              </p>
-              <NoorButton variant="yellow" size="md" className="mt-3" onClick={() => setView("create-session")}>
-                تشکیل محفل
-              </NoorButton>
+      <div className="space-y-5 px-4">
+        {/* ═══ ۲. کارت موجودی نور (لیمویی) ═══ */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <button
+            onClick={() => setView("dashboard")}
+            className="d-card-lime block w-full p-4 text-right"
+            aria-label="کیف امتیاز"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[10px] font-extrabold tracking-wide text-ink/70">
+                  موجودی نور
+                </p>
+                <p className="mt-1 flex items-baseline gap-1" dir="ltr">
+                  <span className="tabular-display text-[38px] leading-none text-ink">
+                    {fa(credit)}
+                  </span>
+                  <span className="text-sm font-extrabold text-ink/70">نور</span>
+                </p>
+              </div>
+              <span className="d-badge d-badge-coral -rotate-2">
+                <TrendingUp className="h-3 w-3" />
+                قاری فعال
+              </span>
             </div>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {rooms.slice(0, 6).map((r) => (
-                <motion.article
-                  key={r.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="w-64 shrink-0 overflow-hidden rounded-3xl shadow-lg"
-                  style={{
-                    background: "linear-gradient(160deg,#0c0b09,#17150f 55%,#0b0a08)",
-                    border: "1px solid rgba(255,215,0,.18)",
-                  }}
-                >
-                  <div className="relative p-5 text-center" style={{ minHeight: 150 }}>
-                    <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-black text-white">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> زنده
-                    </span>
-                    <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full text-3xl"
-                      style={{
-                        background: "linear-gradient(140deg,#FFE58A,#FFC400)",
-                        boxShadow: "0 12px 26px rgba(255,196,0,.4), inset 0 3px 4px rgba(255,255,255,.5)",
-                      }}
-                    >
-                      🎙
-                    </div>
-                    <div className="truncate text-sm font-black" title={r.title ?? r.name}>
-                      {r.title ?? r.name ?? "محفل تلاوت"}
-                    </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
-                      میزبان: {r.hostName ?? "—"}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(255,255,255,.04)" }}>
-                    <span className="text-[10.5px] text-muted-foreground">
-                      👥 {r.attendees ?? 1}/{r.capacity ?? 10}
-                    </span>
-                    <NoorButton variant="yellow" size="sm" onClick={() => joinRoom(r.id)} disabled={joining === r.id}>
-                      {joining === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "پیوستن"}
-                    </NoorButton>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          )}
-        </section>
 
-        {/* ── تازه‌های بلاگ ── */}
-        <section className="mb-10">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <h2 className="flex items-center gap-2 text-base font-black text-noor-navy dark:text-white">
-              <BookOpen className="h-4.5 w-4.5 text-noor-sky" />
-              تازه‌های بلاگ
-            </h2>
-            <button onClick={() => setView("blog")} className="text-[11px] font-bold text-noor-sky hover:underline">
-              همه پست‌ها
-            </button>
-          </div>
-
-          {posts.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-muted-foreground/25 p-6 text-center text-sm text-muted-foreground">
-              هنوز پستی منتشر نشده — اولین یادداشت را تو بنویس ✍️
+            <div className="my-3.5">
+              <DDash />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {posts.slice(0, 5).map((p) => (
-                <motion.button
-                  key={p.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => setView("blog")}
-                  className="flex w-full items-start gap-4 rounded-3xl bg-card p-4 text-right shadow-sm transition hover:shadow-md"
-                >
-                  {p.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.imageUrl} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
-                  ) : (
-                    <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-noor-sky/10 text-3xl">📖</span>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="d-subcard flex items-center gap-2.5 p-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#35C76A]/15 text-[#23A050]">
+                  <ArrowDownLeft className="h-4 w-4" />
+                </span>
+                <span>
+                  <span className="block text-[10px] font-bold text-muted-foreground leading-none">
+                    امتیاز نور
+                  </span>
+                  <span className="mt-1 block text-sm font-extrabold leading-none">
+                    {fa(noorPoints)}
+                  </span>
+                </span>
+              </div>
+              <div className="d-subcard flex items-center gap-2.5 p-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-coral/15 text-coral">
+                  <ArrowUpRight className="h-4 w-4" />
+                </span>
+                <span>
+                  <span className="block text-[10px] font-bold text-muted-foreground leading-none">
+                    محافل حضور یافته
+                  </span>
+                  <span className="mt-1 block text-sm font-extrabold leading-none">
+                    {fa(attended)}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </button>
+        </motion.section>
+
+        {/* ═══ ۳. ردیف کاشی‌های اکشن ═══ */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.05 }}
+          className="grid grid-cols-4 gap-3 px-1"
+        >
+          <DTile
+            label="تشکیل محفل"
+            bg="#9B7BFF"
+            iconColor="#fff"
+            icon={<Plus className="h-5 w-5" strokeWidth={2.6} />}
+            onClick={() => setView("create-session")}
+          />
+          <DTile
+            label="محفل‌های من"
+            bg="#1D1D1B"
+            iconColor="#CDF138"
+            icon={<Mic className="h-5 w-5" />}
+            onClick={() => setView("sessions")}
+          />
+          <DTile
+            label="چالش قرآنی"
+            bg="#FF6B4A"
+            iconColor="#fff"
+            icon={<Swords className="h-5 w-5" />}
+            onClick={() => setView("challenge")}
+          />
+          <DTile
+            label="کیف امتیاز"
+            bg="#4D9EFF"
+            iconColor="#fff"
+            icon={<Wallet className="h-5 w-5" />}
+            onClick={() => setView("dashboard")}
+          />
+        </motion.section>
+
+        {/* ═══ ۴. کارت «محفل بعدی» ═══ */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.1 }}
+        >
+          <DSectionHeader title="محفل بعدی" actionLabel="همه محفل‌ها" onAction={() => setView("sessions")} />
+          {upcoming ? (
+            <DCard tone="white" className="mt-2.5 flex items-center gap-3 p-3.5">
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border-2 border-ink bg-lime shadow-[0_2px_0_0_#1D1D1B]">
+                <span className="text-center leading-none">
+                  <span className="block text-[9px] font-extrabold text-ink/60">
+                    {dateTile(upcoming.startedAt).month}
+                  </span>
+                  <span className="mt-0.5 block text-lg font-black text-ink">
+                    {dateTile(upcoming.startedAt).day}
+                  </span>
+                </span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <DBadge tone="lemon">
+                    <CalendarDays className="h-3 w-3" />
+                    {daysLeft(upcoming.startedAt) ?? "در حال اجرا"}
+                  </DBadge>
+                  {upcoming.status === "live" && (
+                    <DBadge tone="coral">
+                      <Radio className="h-3 w-3" /> زنده
+                    </DBadge>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-black text-noor-navy dark:text-white">{p.title}</div>
-                    <div className="mt-1 line-clamp-2 text-xs leading-6 text-muted-foreground">{p.excerpt}</div>
-                    <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground">
-                      <span>❤️ {p.likes.toLocaleString("fa-IR")}</span>
-                      <span>👁 {p.views ?? ""}</span>
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
+                </div>
+                <p className="mt-1.5 truncate font-rounded text-sm font-extrabold">
+                  {upcoming.title}
+                </p>
+                <p className="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  {fa(upcoming.attendees)}/{fa(upcoming.capacity)} · {upcoming.hostName}
+                </p>
+              </div>
+              <DButton
+                variant="ink"
+                size="sm"
+                loading={joining === upcoming.id}
+                onClick={() => joinRoom(upcoming.id)}
+                className="shrink-0"
+              >
+                پیوستن
+              </DButton>
+            </DCard>
+          ) : (
+            <button
+              onClick={() => setView("create-session")}
+              className="mt-2.5 flex w-full items-center gap-3 rounded-3xl border-2 border-dashed border-ink/30 bg-card/50 p-4 text-right transition hover:border-ink/60"
+            >
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border-2 border-dashed border-ink/40 text-ink/50">
+                <Plus className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-rounded text-sm font-extrabold">
+                  هنوز محفلی در راه نیست
+                </span>
+                <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
+                  اولین محفل را شما تشکیل دهید
+                </span>
+              </span>
+              <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </button>
           )}
-        </section>
+        </motion.section>
+
+        {/* ═══ ۵. قاریان آنلاین ═══ */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.15 }}
+        >
+          <DSectionHeader
+            title="قاریان آنلاین"
+            actionLabel="همه"
+            onAction={() => setView("sessions")}
+          />
+          <div className="mt-2.5">
+            <DQuickRow
+              addLabel="دعوت"
+              onAdd={() => setView("sessions")}
+              items={online.slice(0, 8).map((u) => ({
+                id: u.id,
+                fullName: u.fullName,
+                avatarUrl: u.avatarUrl,
+                avatarColor: u.avatarColor,
+                onClick: () => openProfile(u.id),
+              }))}
+            />
+          </div>
+        </motion.section>
+
+        {/* ═══ ۶. محافل زندهٔ همین حالا ═══ */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.2 }}
+        >
+          <DSectionHeader title="همین حالا زنده است" actionLabel="همه" onAction={() => setView("sessions")} />
+          {rooms.length > 0 ? (
+            <div className="mt-2.5 space-y-3">
+              {rooms.slice(0, 3).map((room, i) => {
+                const tones = ["mint", "pink", "lav"] as const;
+                return (
+                  <DCard key={room.id} tone={tones[i % 3]} className="flex items-center gap-3 p-3.5">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border-2 border-ink bg-card">
+                      <Mic className="h-5 w-5 text-ink" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-rounded text-sm font-extrabold">
+                        {room.title || room.name || "محفل تلاوت"}
+                      </p>
+                      <p className="mt-0.5 text-[11px] font-bold text-ink/60">
+                        {room.hostName} · {fa(room.attendees ?? 0)} شنونده
+                      </p>
+                    </div>
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF3B30] opacity-60" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#FF3B30]" />
+                    </span>
+                    <DButton
+                      variant="white"
+                      size="sm"
+                      loading={joining === room.id}
+                      onClick={() => joinRoom(room.id)}
+                      className="shrink-0"
+                    >
+                      پیوستن
+                    </DButton>
+                  </DCard>
+                );
+              })}
+            </div>
+          ) : (
+            <DCard tone="white" className="mt-2.5 flex flex-col items-center gap-2 p-6 text-center">
+              <span className="grid h-12 w-12 place-items-center rounded-full border-2 border-ink/20 text-ink/40">
+                <Radio className="h-5 w-5" />
+              </span>
+              <p className="font-rounded text-sm font-extrabold">الان محفل زنده‌ای نیست</p>
+              <p className="text-[11px] font-medium text-muted-foreground">
+                وقتی محفلی شروع شود همین‌جا می‌بینید
+              </p>
+            </DCard>
+          )}
+        </motion.section>
+
+        {/* ═══ ۷. تازه‌های بلاگ ═══ */}
+        {posts.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.25 }}
+          >
+            <DSectionHeader title="تازه‌های قرآنی" actionLabel="بلاگ" onAction={() => setView("blog")} />
+            <div className="mt-2.5 space-y-3">
+              {posts.map((post, i) => {
+                const tones = ["lemon", "sky", "white"] as const;
+                return (
+                  <button
+                    key={post.id}
+                    onClick={() => setView("blog")}
+                    className="block w-full text-right"
+                  >
+                    <DCard tone={tones[i % 3]} className="flex items-center gap-3 p-3.5">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border-2 border-ink bg-card text-ink">
+                        <BookOpen className="h-5 w-5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-rounded text-sm font-extrabold">
+                          {post.title}
+                        </span>
+                        <span className="mt-0.5 line-clamp-1 text-[11px] font-medium text-ink/60">
+                          {post.excerpt}
+                        </span>
+                      </span>
+                      <ChevronLeft className="h-4 w-4 shrink-0 text-ink/50" />
+                    </DCard>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
       </div>
     </div>
   );

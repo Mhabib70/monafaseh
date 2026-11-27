@@ -1,17 +1,16 @@
 "use client";
 
 // ============================================================
-// نوار ناوبری پایین — قلب حس اپلیکیشن در موبایل
-// ۵ تب هم‌اندازه (خانه/محافل/چالش/پنل/پروفایل) · هایلایت طلایی · هپتیک · safe-area
-// تشکیل محفل از کارت «محفل من» در فید و کاشی «تشکیل محفل» پنل در دسترس است
+// نوار ناوبری پایین — سبک اپلیکیشن Darahim
+// ۵ تب: خانه / محافل / [ضبط - مرکزی] / چالش / پروفایل
+// تب فعال: کپسول لیمویی · دکمه مرکزی: دایره مشکی با آیکون لیمویی
 // ============================================================
 
 import { useNoorStore } from "@/store/noor-store";
 import { cn } from "@/lib/utils";
-import { IconHome, IconMic, IconSwords, IconUser, IconDashboard } from "./app-icons";
+import { IconHome, IconMic, IconSwords, IconUser } from "./app-icons";
 
 function tap() {
-  // هپتیک خیلی کوتاه — در iOS بی‌اثر، در اندروید لطیف
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
     try {
       navigator.vibrate(8);
@@ -33,43 +32,72 @@ export function BottomNav() {
     setView(v);
   };
 
-  const items = [
-    { key: "feed", label: "خانه", icon: <IconHome size={23} />, view: "feed" as const },
-    { key: "sessions", label: "محافل", icon: <IconMic size={23} />, view: "sessions" as const },
-    { key: "challenge", label: "چالش", icon: <IconSwords size={23} />, view: "challenge" as const },
-    { key: "panel", label: "پنل", icon: <IconDashboard size={23} />, view: "dashboard" as const },
-    { key: "profile", label: "پروفایل", icon: <IconUser size={23} />, view: "profile" as const },
+  const tabs = [
+    { key: "feed", label: "خانه", icon: <IconHome size={21} />, view: "feed" as const },
+    { key: "sessions", label: "محافل", icon: <IconMic size={21} />, view: "sessions" as const },
+    { key: "challenge", label: "چالش", icon: <IconSwords size={21} />, view: "challenge" as const },
+    { key: "profile", label: "پروفایل", icon: <IconUser size={21} />, view: "profile" as const },
   ];
 
+  const isActive = (v: string) =>
+    view === v || (v === "feed" && view === "dashboard");
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" aria-label="ناوبری اصلی">
-      <div className="glass-panel border-t border-noor-navy/10 dark:border-white/10 px-2 pt-1.5 pb-safe">
-        <div className="mx-auto flex max-w-md items-center justify-around">
-          {items.map((it) => (
-            <button
-              key={it.key}
-              onClick={() => go(it.view)}
-              aria-label={it.label}
-              aria-current={view === it.view ? "page" : undefined}
-              className={cn(
-                "flex w-16 flex-col items-center gap-1 rounded-xl py-1 transition-colors",
-                view === it.view
-                  ? "text-noor-navy dark:text-noor-yellow"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {it.icon}
-              <span className="text-[9.5px] font-bold leading-none">{it.label}</span>
-              <span
-                className={cn(
-                  "h-1 w-1 rounded-full transition-opacity",
-                  view === it.view ? "bg-current opacity-100" : "opacity-0",
-                )}
-              />
-            </button>
+    <nav
+      className="fixed bottom-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2"
+      aria-label="ناوبری اصلی"
+    >
+      <div className="border-t-2 border-ink bg-card px-3 pb-safe pt-2 dark:border-[#33332F]">
+        <div className="flex items-center justify-between">
+          {/* تب‌های راست (RTL: اول لیست = راست) */}
+          {tabs.slice(0, 2).map((it) => (
+            <TabButton key={it.key} it={it} active={isActive(it.view)} go={go} />
+          ))}
+
+          {/* دکمه مرکزی ضبط — دایره مشکی با آیکون لیمویی */}
+          <button
+            onClick={() => go("create-session")}
+            aria-label="ضبط تلاوت جدید"
+            className={cn(
+              "-mt-7 grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-ink bg-ink text-lime shadow-[0_3px_0_0_#1D1D1B] transition-transform active:translate-y-[3px] active:shadow-none",
+              view === "create-session" && "ring-4 ring-lime/50",
+            )}
+          >
+            <IconMic size={24} />
+          </button>
+
+          {tabs.slice(2).map((it) => (
+            <TabButton key={it.key} it={it} active={isActive(it.view)} go={go} />
           ))}
         </div>
       </div>
     </nav>
+  );
+}
+
+function TabButton({
+  it,
+  active,
+  go,
+}: {
+  it: { key: string; label: string; icon: React.ReactNode; view: "feed" | "sessions" | "challenge" | "profile" };
+  active: boolean;
+  go: (v: "feed" | "sessions" | "challenge" | "profile") => void;
+}) {
+  return (
+    <button
+      onClick={() => go(it.view)}
+      aria-label={it.label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex h-11 items-center gap-1.5 rounded-full px-3 transition-colors",
+        active ? "bg-lime text-ink shadow-[0_2px_0_0_#1D1D1B]" : "text-muted-foreground",
+      )}
+    >
+      {it.icon}
+      <span className={cn("text-[10.5px] font-extrabold leading-none", !active && "hidden sm:inline")}>
+        {it.label}
+      </span>
+    </button>
   );
 }

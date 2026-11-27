@@ -170,11 +170,11 @@ export function InvitationBell() {
       {/* Bell button */}
       <button
         onClick={() => setShowDropdown((v) => !v)}
-        className="relative grid h-9 w-9 place-items-center rounded-full bg-white/70 text-noor-navy transition hover:bg-white dark:bg-white/10 dark:text-white"
+        className="relative grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-card text-ink shadow-[0_2px_0_0_#1D1D1B] transition active:translate-y-[2px] active:shadow-none dark:border-[#3A3A36] dark:bg-[#242421] dark:text-white"
         aria-label="دعوت‌ها"
         title="دعوت‌ها"
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-4.5 w-4.5" />
         {pending.length > 0 && (
           <motion.span
             initial={{ scale: 0 }}
